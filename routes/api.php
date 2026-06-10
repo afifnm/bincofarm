@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\KasController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\LaporanController;
 use App\Http\Controllers\Api\MutasiBarangController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\TransaksiKasController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Auth
@@ -54,4 +56,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/periode/tutup', [PeriodeController::class, 'tutup']);
     Route::post('/periode/buka', [PeriodeController::class, 'buka']);
     Route::get('/periode/check', [PeriodeController::class, 'checkPeriode']);
+
+    // User profile
+    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::put('/user/password', [UserController::class, 'changePassword']);
+
+    // Activity log
+    Route::get('/activity-log', [ActivityLogController::class, 'index']);
 });

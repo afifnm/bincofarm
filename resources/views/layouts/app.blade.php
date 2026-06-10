@@ -53,13 +53,16 @@
             {{-- User footer --}}
             <div class="px-3 py-3 border-t" style="border-color:var(--color-border);">
                 <div class="flex items-center gap-3 px-2 py-2 rounded-xl" style="background:var(--color-bg);">
-                    <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                         style="background:var(--color-primary-soft);color:var(--color-primary);">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold truncate" style="color:var(--color-text);">{{ auth()->user()->name }}</p>
-                    </div>
+                    <a href="{{ route('profil') }}" class="flex items-center gap-2 flex-1 min-w-0" title="Profil">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                             style="background:var(--color-primary-soft);color:var(--color-primary);">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold truncate" style="color:var(--color-text);">{{ auth()->user()->name }}</p>
+                            <p class="text-xs truncate" style="color:var(--color-text-muted);">{{ auth()->user()->role }}</p>
+                        </div>
+                    </a>
                     <button onclick="event.preventDefault();fetch('/api/logout',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content}}).then(()=>location.href='/login')"
                             class="p-1 rounded-lg transition-colors"
                             style="color:var(--color-text-muted);"
@@ -114,14 +117,16 @@
                         </svg>
                     </button>
                     {{-- User badge (desktop) --}}
-                    <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium"
-                         style="border-color:var(--color-border);background:var(--color-bg);color:var(--color-text-muted);">
+                    <a href="{{ route('profil') }}" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors"
+                       style="border-color:var(--color-border);background:var(--color-bg);color:var(--color-text-muted);"
+                       onmouseover="this.style.background='var(--color-primary-soft)';this.style.color='var(--color-primary)'"
+                       onmouseout="this.style.background='var(--color-bg)';this.style.color='var(--color-text-muted)'">
                         <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                              style="background:var(--color-primary-soft);color:var(--color-primary);">
                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                         </div>
                         <span>{{ auth()->user()->name }}</span>
-                    </div>
+                    </a>
                 </div>
             </header>
 

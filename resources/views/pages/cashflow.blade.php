@@ -39,6 +39,11 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             Tampilkan
         </button>
+        <div class="w-full flex gap-1.5">
+            <button type="button" @click="setThisMonth()" class="filter-pill text-xs px-3 py-1">Bulan Ini</button>
+            <button type="button" @click="setLastMonth()" class="filter-pill text-xs px-3 py-1">Bulan Lalu</button>
+            <button type="button" @click="resetDates()" class="filter-pill text-xs px-3 py-1">Reset</button>
+        </div>
     </div>
 
     {{-- Loading --}}
@@ -141,6 +146,10 @@ function cashflowApp() {
             if(res?.ok){const d=await res.json();this.kasList=d.data||[];}
             await this.load();
         },
+
+        setThisMonth(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); this.load(); },
+        setLastMonth(){ const n=new Date(); const y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); const m=n.getMonth()===0?11:n.getMonth()-1; this.dari=new Date(y,m,1).toISOString().slice(0,10); this.sampai=new Date(y,m+1,0).toISOString().slice(0,10); this.load(); },
+        resetDates(){ this.dari=''; this.sampai=''; this.filterKas=''; this.reports=[]; },
 
         async load(){
             if(!this.dari||!this.sampai) return;

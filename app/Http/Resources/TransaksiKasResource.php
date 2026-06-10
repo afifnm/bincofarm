@@ -27,6 +27,7 @@ class TransaksiKasResource extends JsonResource
             'is_void'        => $this->is_void,
             'void_at'        => $this->void_at,
             'user_id'        => $this->user_id,
+            'user'           => $this->whenLoaded('user', fn () => ['id' => $this->user->id, 'name' => $this->user->name]),
             'created_at'     => $this->created_at,
         ];
     }

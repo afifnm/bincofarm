@@ -39,6 +39,20 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             Tampilkan
         </button>
+        <div class="w-full flex gap-1.5">
+            <button type="button" @click="setThisMonth()" class="filter-pill text-xs px-3 py-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                Bulan Ini
+            </button>
+            <button type="button" @click="setLastMonth()" class="filter-pill text-xs px-3 py-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                Bulan Lalu
+            </button>
+            <button type="button" @click="resetDates()" class="filter-pill text-xs px-3 py-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                Reset
+            </button>
+        </div>
     </div>
 
     {{-- Loading --}}
@@ -135,6 +149,10 @@ function kartuStokApp() {
             const res=await apiFetch('/api/barang?per_page=100');
             if(res?.ok){const d=await res.json();this.barangList=d.data||[];}
         },
+
+        setThisMonth(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); },
+        setLastMonth(){ const n=new Date(); const y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); const m=n.getMonth()===0?11:n.getMonth()-1; this.dari=new Date(y,m,1).toISOString().slice(0,10); this.sampai=new Date(y,m+1,0).toISOString().slice(0,10); },
+        resetDates(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); this.report=null; },
 
         async load(){
             if(!this.filterBarang||!this.dari||!this.sampai) return;

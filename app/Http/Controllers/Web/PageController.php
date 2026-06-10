@@ -58,4 +58,14 @@ class PageController extends Controller
     {
         return view('pages.tutup-buku');
     }
+
+    public function profil(): View
+    {
+        return view('pages.profil');
+    }
+
+    public function logSistem(): View
+    {
+        return view('pages.log-sistem');
+    }
 }
