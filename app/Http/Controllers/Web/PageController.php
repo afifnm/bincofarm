@@ -73,4 +73,29 @@ class PageController extends Controller
     {
         return view('pages.user');
     }
+
+    public function greenhouse(): View
+    {
+        return view('pages.greenhouse');
+    }
+
+    public function jenisMelon(): View
+    {
+        return view('pages.jenis-melon');
+    }
+
+    public function panenMelon(): View
+    {
+        return view('pages.panen-melon');
+    }
+
+    public function penjualanMelon(): View
+    {
+        return view('pages.penjualan-melon');
+    }
+
+    public function laporanGreenhouse(): View
+    {
+        return view('pages.laporan-greenhouse');
+    }
 }

@@ -73,14 +73,14 @@
     {{-- Form card --}}
     <div class="w-full max-w-sm"
          x-data="{
-             email: '', password: '', showPw: false, loading: false, error: '',
+             login: '', password: '', showPw: false, loading: false, error: '',
              async submit() {
                  this.loading = true; this.error = '';
                  const res = await fetch('/api/login', {
                      method: 'POST',
                      headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
                      credentials: 'same-origin',
-                     body: JSON.stringify({email: this.email, password: this.password})
+                     body: JSON.stringify({login: this.login, password: this.password})
                  });
                  const data = await res.json();
                  if (res.ok) { location.href = '/'; }
@@ -104,18 +104,18 @@
                 <span x-text="error"></span>
             </div>
 
-            {{-- Email --}}
+            {{-- Email / No. HP --}}
             <div>
-                <label class="form-label">Alamat Email</label>
+                <label class="form-label">Email atau No. HP</label>
                 <div class="relative">
                     <div class="absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--color-text-muted);">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                     </div>
-                    <input type="email" x-model="email" required autocomplete="email"
+                    <input type="text" x-model="login" required autocomplete="username"
                            class="form-input pl-10"
-                           placeholder="admin@bincofarm.com"/>
+                           placeholder="email atau 08xx-xxxx-xxxx"/>
                 </div>
             </div>
 

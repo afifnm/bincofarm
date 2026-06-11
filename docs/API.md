@@ -55,7 +55,7 @@ Authorization: Bearer {token}         (untuk semua endpoint ber-auth)
 
 Alur untuk mobile (token-based):
 
-1. `POST /api/login` dengan `email`, `password`, dan `device_name` → response berisi `user` dan `token`.
+1. `POST /api/login` dengan `login` (email atau no. HP), `password`, dan `device_name` → response berisi `user` dan `token`.
 2. Simpan `token` secara aman (lihat [Catatan Integrasi Flutter](#18-catatan-integrasi-flutter)).
 3. Kirim header `Authorization: Bearer {token}` di **semua** request berikutnya.
 4. `POST /api/logout` → token yang sedang dipakai di-revoke (dihapus dari server).
@@ -168,9 +168,12 @@ Request body:
 
 | Field | Tipe | Wajib | Aturan |
 |---|---|---|---|
-| `email` | string | ya | format email |
+| `login` | string | ya* | email **atau** no. HP. Format HP fleksibel: `0812 3456 7890`, `0812-3456-7890`, dan `+62812...` dianggap sama |
+| `email` | string | ya* | alias lama dari `login`, tetap didukung untuk kompatibilitas |
 | `password` | string | ya | |
 | `device_name` | string | tidak | max 100; nama token, mis. `"Pixel 7 - Android"`. Default `"mobile"` |
+
+\* Kirim salah satu dari `login` atau `email`.
 
 Response `200`:
 
@@ -197,8 +200,8 @@ Error `422` (kredensial salah):
 
 ```json
 {
-  "message": "Email atau password salah.",
-  "errors": { "email": ["Email atau password salah."] }
+  "message": "Email/No. HP atau password salah.",
+  "errors": { "login": ["Email/No. HP atau password salah."] }
 }
 ```
 

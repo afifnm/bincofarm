@@ -65,7 +65,8 @@
                         </td>
                         <td class="tbl-cell hidden md:table-cell text-xs" style="color:var(--color-text-muted);" x-text="user.email"></td>
                         <td class="tbl-cell hidden sm:table-cell text-center">
-                            <span class="badge" :class="user.role==='admin' ? 'badge-info' : 'badge-neutral'" x-text="user.role"></span>
+                            <span class="badge" :class="user.role==='admin' ? 'badge-info' : 'badge-neutral'"
+                                  x-text="roleLabel(user.role)"></span>
                         </td>
                         <td class="tbl-cell hidden lg:table-cell text-xs" style="color:var(--color-text-muted);" x-text="user.phone || '—'"></td>
                         <td class="tbl-cell">
@@ -144,8 +145,9 @@
                     <div>
                         <label class="form-label">Role</label>
                         <select x-model="form.role" class="form-input">
-                            <option value="user">User</option>
                             <option value="admin">Admin</option>
+                            <option value="inventory">Inventory &amp; Kas</option>
+                            <option value="pj_gh">Penanggung Jawab GH</option>
                         </select>
                     </div>
                     <div>
@@ -225,7 +227,11 @@ function userApp() {
         confirmDelete: false, deleteTarget: null, editId: null, deleting: false,
         search: '',
         meta: { current_page:1, last_page:1, from:1, to:1, total:0 },
-        form: { name:'', email:'', role:'user', phone:'', password:'' },
+        form: { name:'', email:'', role:'inventory', phone:'', password:'' },
+
+        roleLabel(role) {
+            return { admin: 'Admin', inventory: 'Inventory & Kas', pj_gh: 'PJ Greenhouse' }[role] || role;
+        },
 
         get pageRange() {
             const cur = this.meta.current_page, last = this.meta.last_page;
@@ -255,7 +261,7 @@ function userApp() {
 
         openCreate() {
             this.editId = null;
-            this.form = { name:'', email:'', role:'user', phone:'', password:'' };
+            this.form = { name:'', email:'', role:'inventory', phone:'', password:'' };
             this.open = true;
         },
 

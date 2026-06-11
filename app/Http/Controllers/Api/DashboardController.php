@@ -9,14 +9,22 @@ use App\Http\Resources\BarangResource;
 use App\Http\Resources\KasResource;
 use App\Models\Barang;
 use App\Models\Kas;
+use App\Models\PanenMelon;
+use App\Models\PenjualanMelon;
 use App\Models\TransaksiKas;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        // PJ GH tidak boleh melihat saldo kas & stok — tampilkan ringkasan GH-nya saja
+        if ($request->user()->isPjGh()) {
+            return $this->dashboardPjGh($request);
+        }
+
         $kasAktif = Kas::where('is_active', true)->get();
 
         $bulanIni  = Carbon::now()->startOfMonth();
@@ -50,6 +58,48 @@ class DashboardController extends Controller
             'total_saldo'  => $totalSaldo,
             'kas'          => $ringkasan->values(),
             'stok_menipis' => BarangResource::collection($stokMenipis),
+            'periode_info' => [
+                'bulan' => Carbon::now()->format('Y-m'),
+            ],
+        ]);
+    }
+
+    private function dashboardPjGh(Request $request): JsonResponse
+    {
+        $bulanIni   = Carbon::now()->startOfMonth()->toDateString();
+        $akhirBulan = Carbon::now()->endOfMonth()->toDateString();
+
+        $greenhouses = $request->user()->greenhouses()
+            ->with('populasi')
+            ->where('is_active', true)
+            ->orderBy('nama')
+            ->get();
+
+        $ghIds = $greenhouses->pluck('id');
+
+        $panenBulanIni = (float) PanenMelon::whereIn('greenhouse_id', $ghIds)
+            ->whereBetween('tanggal', [$bulanIni, $akhirBulan])
+            ->sum('berat');
+
+        $jualBulanIni = (float) PenjualanMelon::whereIn('greenhouse_id', $ghIds)
+            ->whereBetween('tanggal', [$bulanIni, $akhirBulan])
+            ->sum('jumlah_kg');
+
+        return response()->json([
+            'total_saldo'  => null,
+            'kas'          => [],
+            'stok_menipis' => [],
+            'greenhouse'   => [
+                'daftar' => $greenhouses->map(fn ($gh) => [
+                    'id'          => $gh->id,
+                    'nama'        => $gh->nama,
+                    'lokasi'      => $gh->lokasi,
+                    'pohon_hidup' => $gh->populasi?->pohon_hidup ?? 0,
+                    'pohon_mati'  => $gh->populasi?->pohon_mati ?? 0,
+                ])->values(),
+                'panen_bulan_ini_kg' => $panenBulanIni,
+                'jual_bulan_ini_kg'  => $jualBulanIni,
+            ],
             'periode_info' => [
                 'bulan' => Carbon::now()->format('Y-m'),
             ],

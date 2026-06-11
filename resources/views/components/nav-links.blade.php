@@ -1,10 +1,17 @@
 @php
+$user        = auth()->user();
+$isAdmin     = $user->isAdmin();
+$isInventory = $user->isInventory();
+$isPjGh      = $user->isPjGh();
+
 $masterKasActive = request()->routeIs('kas') || request()->routeIs('kategori');
+$ghActive = request()->routeIs('greenhouse') || request()->routeIs('jenis-melon') || request()->routeIs('panen-melon') || request()->routeIs('penjualan-melon') || request()->routeIs('laporan-greenhouse');
 $manajemenActive = request()->routeIs('tutup-buku') || request()->routeIs('log-sistem') || request()->routeIs('user');
 
 $sections = [
     [
         'label' => 'Beranda',
+        'show'  => true,
         'items' => [
             [
                 'route' => 'dashboard',
@@ -15,16 +22,23 @@ $sections = [
     ],
     [
         'label' => 'Keuangan',
+        'show'  => $isAdmin || $isInventory,
+        'items' => [],
+    ],
+    [
+        'label' => 'Greenhouse',
+        'show'  => $isAdmin || $isPjGh,
         'items' => [],
     ],
     [
         'label' => 'Inventori',
-        'items' => [
-            [
+        'show'  => $isAdmin || $isInventory,
+        'items' => array_values(array_filter([
+            $isAdmin ? [
                 'route' => 'barang',
                 'label' => 'Master Barang',
                 'icon'  => '<svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>',
-            ],
+            ] : null,
             [
                 'route' => 'mutasi-barang',
                 'label' => 'Mutasi Barang',
@@ -35,10 +49,11 @@ $sections = [
                 'label' => 'Kartu Stok',
                 'icon'  => '<svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605"/></svg>',
             ],
-        ],
+        ])),
     ],
     [
         'label' => 'Manajemen',
+        'show'  => $isAdmin,
         'items' => [
             [
                 'route' => 'user',
@@ -61,13 +76,64 @@ $sections = [
 @endphp
 
 @foreach($sections as $section)
+    @continue(! $section['show'])
+
     @if(!$loop->first)
     <p class="nav-section">{{ $section['label'] }}</p>
     @endif
 
     {{-- Special: Keuangan section with Master Kas dropdown --}}
-    @if($section['label'] === 'Keuangan')
+    @if($section['label'] === 'Greenhouse')
 
+        {{-- Greenhouse accordion --}}
+        <div x-data="{ open: {{ $ghActive ? 'true' : 'false' }} }">
+            <button @click="open = !open"
+                    class="nav-item w-full justify-between {{ $ghActive ? 'active' : '' }}">
+                <span class="flex items-center gap-2.5">
+                    <svg style="width:18px;height:18px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21"/>
+                    </svg>
+                    <span>Greenhouse</span>
+                </span>
+                <svg class="w-3.5 h-3.5 transition-transform duration-200 shrink-0"
+                     :class="open ? 'rotate-180' : ''"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="pl-4 mt-0.5 space-y-0.5">
+                <a href="{{ route('greenhouse') }}" class="nav-item {{ request()->routeIs('greenhouse') ? 'active' : '' }}">
+                    <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75"/></svg>
+                    <span>{{ $isAdmin ? 'Master GH' : 'GH Saya' }}</span>
+                </a>
+                @if($isAdmin)
+                <a href="{{ route('jenis-melon') }}" class="nav-item {{ request()->routeIs('jenis-melon') ? 'active' : '' }}">
+                    <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/></svg>
+                    <span>Jenis Melon</span>
+                </a>
+                @endif
+                <a href="{{ route('panen-melon') }}" class="nav-item {{ request()->routeIs('panen-melon') ? 'active' : '' }}">
+                    <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5"/></svg>
+                    <span>Panen Melon</span>
+                </a>
+                <a href="{{ route('penjualan-melon') }}" class="nav-item {{ request()->routeIs('penjualan-melon') ? 'active' : '' }}">
+                    <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272"/></svg>
+                    <span>Penjualan</span>
+                </a>
+                <a href="{{ route('laporan-greenhouse') }}" class="nav-item {{ request()->routeIs('laporan-greenhouse') ? 'active' : '' }}">
+                    <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/></svg>
+                    <span>Laporan</span>
+                </a>
+            </div>
+        </div>
+
+    @elseif($section['label'] === 'Keuangan')
+
+        @if($isAdmin)
         {{-- Master Kas accordion --}}
         <div x-data="{ open: {{ $masterKasActive ? 'true' : 'false' }} }">
             <button @click="open = !open"
@@ -105,6 +171,7 @@ $sections = [
                 </a>
             </div>
         </div>
+        @endif
 
         {{-- Transaksi Kas --}}
         <a href="{{ route('transaksi-kas') }}"

@@ -42,4 +42,9 @@ class Kas extends Model
     {
         return $this->hasMany(SaldoPeriode::class);
     }
+
+    public function greenhouses(): HasMany
+    {
+        return $this->hasMany(Greenhouse::class);
+    }
 }
