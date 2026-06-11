@@ -26,6 +26,7 @@ class TransaksiKasController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = TransaksiKas::with(['kas', 'kategori', 'user'])
+            ->whereHas('kas')
             ->orderByDesc('tanggal')
             ->orderByDesc('id');
 
@@ -43,7 +44,9 @@ class TransaksiKasController extends Controller
             $query->where(fn ($s) => $s->where('nomor', 'like', "%{$q}%")
                 ->orWhere('keterangan', 'like', "%{$q}%"));
         }
-        if ($request->has('include_void') && $request->boolean('include_void') === false) {
+        if ($request->boolean('hanya_void')) {
+            $query->where('is_void', true);
+        } else {
             $query->where('is_void', false);
         }
 

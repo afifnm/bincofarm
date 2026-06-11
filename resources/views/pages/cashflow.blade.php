@@ -101,7 +101,7 @@
                     <tbody>
                         <template x-for="trx in report.transaksi" :key="trx.id">
                             <tr class="tbl-row text-xs">
-                                <td class="tbl-cell" x-text="trx.tanggal"></td>
+                                <td class="tbl-cell" x-text="formatDate(trx.tanggal)"></td>
                                 <td class="tbl-cell font-mono" style="color:var(--color-text-muted);" x-text="trx.nomor"></td>
                                 <td class="tbl-cell hidden md:table-cell" x-text="trx.kategori||'-'"></td>
                                 <td class="tbl-cell hidden md:table-cell" style="color:var(--color-text-muted);" x-text="trx.keterangan||'-'"></td>
@@ -140,8 +140,10 @@ function cashflowApp() {
 
         async init(){
             const now = new Date();
-            this.dari   = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
-            this.sampai = now.toISOString().slice(0,10);
+            const params = new URLSearchParams(window.location.search);
+            this.dari   = params.get('dari')  || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+            this.sampai = params.get('sampai') || now.toISOString().slice(0,10);
+            this.filterKas = params.get('kas_id') || '';
             const res = await apiFetch('/api/kas?per_page=100');
             if(res?.ok){const d=await res.json();this.kasList=d.data||[];}
             await this.load();

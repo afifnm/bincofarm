@@ -96,7 +96,7 @@
     <div x-show="openModal" x-cloak
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <x-modal title="Tutup Periode">
+        <x-modal title="Tutup Periode" closeExpr="openModal = false">
             <div class="flex items-start gap-3 p-4 rounded-xl mb-5" style="background:var(--color-bg);border:1px solid var(--color-border);">
                 <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--color-warning);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
                 <p class="text-xs" style="color:var(--color-text-muted);">
@@ -122,7 +122,7 @@
     <div x-show="confirmBuka" x-cloak
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <x-modal title="Buka Periode Terakhir">
+        <x-modal title="Buka Periode Terakhir" closeExpr="confirmBuka = false">
             <div class="text-center py-2 mb-4">
                 <div class="icon-wrap icon-wrap-amber mx-auto mb-4" style="width:48px;height:48px;border-radius:14px;">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>

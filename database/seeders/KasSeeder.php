@@ -13,7 +13,6 @@ class KasSeeder extends Seeder
     {
         $data = [
             [
-                'kode'           => 'KAS-UTAMA',
                 'nama'           => 'Kas Utama',
                 'tipe'           => 'tunai',
                 'saldo_awal'     => 5_000_000,
@@ -21,7 +20,6 @@ class KasSeeder extends Seeder
                 'is_active'      => true,
             ],
             [
-                'kode'           => 'BANK-BCA',
                 'nama'           => 'Bank BCA',
                 'tipe'           => 'bank',
                 'saldo_awal'     => 20_000_000,
@@ -29,7 +27,6 @@ class KasSeeder extends Seeder
                 'is_active'      => true,
             ],
             [
-                'kode'           => 'EWALLET',
                 'nama'           => 'GoPay / OVO',
                 'tipe'           => 'ewallet',
                 'saldo_awal'     => 1_000_000,

@@ -20,7 +20,7 @@ class KasController extends Controller
 
         if (request()->filled('search')) {
             $q = request()->input('search');
-            $query->where(fn ($s) => $s->where('nama', 'like', "%{$q}%")->orWhere('kode', 'like', "%{$q}%"));
+            $query->where('nama', 'like', "%{$q}%");
         }
 
         $perPage = request()->integer('per_page', 50);
@@ -33,7 +33,7 @@ class KasController extends Controller
         $data                   = $request->validated();
         $data['saldo_berjalan'] = $data['saldo_awal'];
         $kas                    = Kas::create($data);
-        ActivityLog::record('create', "Tambah rekening kas: {$kas->nama} ({$kas->kode})", $kas, [], $request);
+        ActivityLog::record('create', "Tambah rekening kas: {$kas->nama}", $kas, [], $request);
         return response()->json(new KasResource($kas), 201);
     }
 
@@ -47,14 +47,14 @@ class KasController extends Controller
         $data = $request->validated();
         unset($data['saldo_awal']);
         $kas->update($data);
-        ActivityLog::record('update', "Update rekening kas: {$kas->nama} ({$kas->kode})", $kas, [], $request);
+        ActivityLog::record('update', "Update rekening kas: {$kas->nama}", $kas, [], $request);
         return new KasResource($kas);
     }
 
     public function destroy(Kas $kas): JsonResponse
     {
-        ActivityLog::record('delete', "Hapus rekening kas: {$kas->nama} ({$kas->kode})", $kas);
+        ActivityLog::record('delete', "Hapus rekening kas: {$kas->nama}", $kas);
         $kas->delete();
-        return response()->json(['message' => 'Kas dihapus.']);
+        return response()->json(['message' => 'Rekening dihapus.']);
     }
 }

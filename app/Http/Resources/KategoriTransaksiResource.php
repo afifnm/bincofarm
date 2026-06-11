@@ -17,6 +17,7 @@ class KategoriTransaksiResource extends JsonResource
             'jenis'     => $this->jenis->value,
             'jenis_label'=> $this->jenis->label(),
             'is_active' => $this->is_active,
+            'in_use'    => ($this->transaksi_kas_count ?? 0) > 0,
         ];
     }
 }

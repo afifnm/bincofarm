@@ -153,32 +153,34 @@ body {
 }
 
 /* ─── Forms ──────────────────────────────────────────────── */
-.form-label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-bottom: 5px;
-    color: var(--color-text-muted);
-}
+@layer components {
+    .form-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-bottom: 5px;
+        color: var(--color-text-muted);
+    }
 
-.form-input {
-    display: block;
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-size: 0.875rem;
-    line-height: 1.5;
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    appearance: none;
-}
-.form-input::placeholder { color: var(--color-text-muted); opacity: 0.7; }
-.form-input:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(5,150,105,.12);
+    .form-input {
+        display: block;
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        appearance: none;
+    }
+    .form-input::placeholder { color: var(--color-text-muted); opacity: 0.7; }
+    .form-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(5,150,105,.12);
+    }
 }
 
 /* ─── Badges ─────────────────────────────────────────────── */

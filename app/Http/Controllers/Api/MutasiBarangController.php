@@ -39,6 +39,11 @@ class MutasiBarangController extends Controller
                 ->orWhere('keterangan', 'like', "%{$q}%")
                 ->orWhere('referensi', 'like', "%{$q}%"));
         }
+        if ($request->boolean('hanya_void')) {
+            $query->where('is_void', true);
+        } else {
+            $query->where('is_void', false);
+        }
 
         $perPage = $request->integer('per_page', 20);
         return MutasiBarangResource::collection($query->paginate($perPage));

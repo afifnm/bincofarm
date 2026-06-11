@@ -68,4 +68,9 @@ class PageController extends Controller
     {
         return view('pages.log-sistem');
     }
+
+    public function user(): View
+    {
+        return view('pages.user');
+    }
 }

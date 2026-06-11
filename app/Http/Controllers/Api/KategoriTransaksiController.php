@@ -16,7 +16,7 @@ class KategoriTransaksiController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
-        $query = KategoriTransaksi::orderBy('jenis')->orderBy('nama');
+        $query = KategoriTransaksi::withCount('transaksiKas')->orderBy('jenis')->orderBy('nama');
 
         if (request()->filled('search')) {
             $q = request()->input('search');

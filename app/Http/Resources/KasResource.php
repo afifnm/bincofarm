@@ -13,7 +13,6 @@ class KasResource extends JsonResource
     {
         return [
             'id'              => $this->id,
-            'kode'            => $this->kode,
             'nama'            => $this->nama,
             'tipe'            => $this->tipe->value,
             'tipe_label'      => $this->tipe->label(),

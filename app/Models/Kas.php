@@ -7,13 +7,15 @@ namespace App\Models;
 use App\Enums\TipeKas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Kas extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'kas';
 
     protected $fillable = [
-        'kode',
         'nama',
         'tipe',
         'saldo_awal',

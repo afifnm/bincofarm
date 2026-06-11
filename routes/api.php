@@ -26,7 +26,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // Kas
-    Route::apiResource('kas', KasController::class);
+    Route::apiResource('kas', KasController::class)->parameters(['kas' => 'kas']);
 
     // Kategori Transaksi
     Route::apiResource('kategori-transaksi', KategoriTransaksiController::class);
@@ -56,6 +56,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/periode/tutup', [PeriodeController::class, 'tutup']);
     Route::post('/periode/buka', [PeriodeController::class, 'buka']);
     Route::get('/periode/check', [PeriodeController::class, 'checkPeriode']);
+
+    // User CRUD (manajemen)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     // User profile
     Route::get('/user/profile', [UserController::class, 'profile']);

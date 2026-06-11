@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('title', 'Bincofarm') — Sistem Keuangan</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <link rel="alternate icon" href="/favicon.ico"/>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+    @stack('styles')
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.store('theme', {
@@ -159,6 +163,17 @@
         return res;
     };
 
+    window.formatDate = function(dateStr) {
+        if (!dateStr) return '—';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const d = parseInt(parts[2], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[0], 10);
+        const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        return `${d} ${months[m]} ${y}`;
+    };
+
     window.toast = (msg, type = 'success') => {
         const c   = document.getElementById('toast-container');
         const div = document.createElement('div');
@@ -175,5 +190,27 @@
         }, 3400);
     };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+    <script>
+    (function() {
+        const fpConfig = { locale: 'id', dateFormat: 'Y-m-d', allowInput: true };
+        const initFp = el => { if (!el._flatpickr) flatpickr(el, fpConfig); };
+
+        document.addEventListener('alpine:initialized', function() {
+            document.querySelectorAll('input[type="date"]').forEach(initFp);
+        });
+
+        const observer = new MutationObserver(muts => {
+            muts.forEach(m => m.addedNodes.forEach(node => {
+                if (node.nodeType !== 1) return;
+                if (node.matches('input[type="date"]')) { initFp(node); }
+                else { node.querySelectorAll('input[type="date"]').forEach(initFp); }
+            }));
+        });
+        document.addEventListener('DOMContentLoaded', () => observer.observe(document.body, { childList: true, subtree: true }));
+    })();
+    </script>
+    @stack('scripts')
 </body>
 </html>

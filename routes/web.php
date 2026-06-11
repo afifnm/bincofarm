@@ -21,6 +21,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/kartu-stok',    [PageController::class, 'kartuStok'])->name('kartu-stok');
     Route::get('/tutup-buku',    [PageController::class, 'tutupBuku'])->name('tutup-buku');
 
+    // User management
+    Route::get('/manajemen/user', [PageController::class, 'user'])->name('user');
+
     // User profile
     Route::get('/profil',        [PageController::class, 'profil'])->name('profil');
 

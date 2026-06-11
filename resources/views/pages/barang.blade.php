@@ -104,7 +104,7 @@
                                 <span class="font-medium" style="color:var(--color-text);" x-text="b.nama"></span>
                                 <span x-show="b.stok_menipis" class="badge badge-danger">Menipis</span>
                             </div>
-                            <p class="text-xs mt-0.5" style="color:var(--color-text-muted);" x-text="b.satuan"></p>
+                            
                         </td>
                         <td class="tbl-cell text-right font-semibold"
                             :style="b.stok_menipis?'color:var(--color-danger);':'color:var(--color-text);'"

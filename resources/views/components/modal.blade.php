@@ -1,14 +1,14 @@
-@props(['name' => 'modal', 'title' => '', 'maxWidth' => 'max-w-lg'])
+@props(['name' => 'modal', 'title' => '', 'maxWidth' => 'max-w-lg', 'closeExpr' => 'open = false'])
 
 {{-- The outer x-show wrapper in each page controls visibility.
      This component provides only the backdrop + panel visual structure. --}}
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
-     @keydown.escape.window="open = false">
+     @keydown.escape.window="{{ $closeExpr }}">
 
     {{-- Backdrop --}}
     <div class="absolute inset-0"
          style="background:rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);"
-         @click="open = false"></div>
+         @click="{{ $closeExpr }}"></div>
 
     {{-- Panel --}}
     <div class="relative w-full {{ $maxWidth }} rounded-2xl shadow-2xl"
@@ -21,7 +21,7 @@
             <h3 class="text-sm font-semibold" style="color:var(--color-text);">
                 {{ $title }}{{ $header ?? '' }}
             </h3>
-            <button @click="open = false"
+            <button @click="{{ $closeExpr }}"
                     class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
                     style="color:var(--color-text-muted);"
                     onmouseover="this.style.background='var(--color-bg)'"

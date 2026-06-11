@@ -1,6 +1,75 @@
 @extends('layouts.app')
 @section('title', 'Kartu Stok')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<style>
+.select2-container { width: 100% !important; }
+.select2-container--default .select2-selection--single {
+    background: var(--color-bg) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 10px !important;
+    height: 41px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--color-text) !important;
+    line-height: 39px !important;
+    padding-left: 14px !important;
+    padding-right: 30px !important;
+    font-size: 0.875rem !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--color-text-muted) !important;
+    opacity: 0.7;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 39px !important;
+    right: 8px !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(5,150,105,.12) !important;
+    outline: none !important;
+}
+.select2-dropdown {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+    z-index: 9999 !important;
+    overflow: hidden;
+}
+.select2-search--dropdown { padding: 8px !important; }
+.select2-search--dropdown .select2-search__field {
+    background: var(--color-bg) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    color: var(--color-text) !important;
+    font-size: 0.875rem !important;
+    padding: 7px 10px !important;
+    outline: none !important;
+}
+.select2-search--dropdown .select2-search__field:focus { border-color: var(--color-primary) !important; }
+.select2-results__options { padding: 4px !important; }
+.select2-results__option {
+    color: var(--color-text) !important;
+    font-size: 0.875rem !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+}
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--color-primary-soft) !important;
+    color: var(--color-primary) !important;
+}
+.select2-container--default .select2-results__option--selected {
+    background: var(--color-primary-soft) !important;
+    color: var(--color-primary) !important;
+    font-weight: 500 !important;
+}
+</style>
+@endpush
+
 @section('content')
 <div x-data="kartuStokApp()" x-init="init()">
 
@@ -22,7 +91,7 @@
     <div class="flex flex-wrap items-end gap-3 mb-6 p-4 rounded-xl border no-print" style="background:var(--color-surface);border-color:var(--color-border);">
         <div class="flex-1 min-w-40">
             <label class="form-label">Barang</label>
-            <select x-model="filterBarang" class="form-input">
+            <select id="s2-barang-ks" class="form-input">
                 <option value="">— Pilih Barang —</option>
                 <template x-for="b in barangList" :key="b.id"><option :value="b.id" x-text="b.nama"></option></template>
             </select>
@@ -107,7 +176,7 @@
                 <tbody>
                     <template x-for="row in report?.mutasi||[]" :key="row.id">
                         <tr class="tbl-row text-xs">
-                            <td class="tbl-cell" x-text="row.tanggal"></td>
+                            <td class="tbl-cell" x-text="formatDate(row.tanggal)"></td>
                             <td class="tbl-cell font-mono" style="color:var(--color-text-muted);" x-text="row.nomor"></td>
                             <td class="tbl-cell hidden md:table-cell" x-text="row.referensi||'—'"></td>
                             <td class="tbl-cell hidden md:table-cell" style="color:var(--color-text-muted);" x-text="row.keterangan||'—'"></td>
@@ -140,7 +209,7 @@
 <script>
 function kartuStokApp() {
     return {
-        barangList:[], filterBarang:'', dari:'', sampai:'', report:null, loading:false,
+        barangList:[], filterBarang:'', dari:'', sampai:'', report:null, loading:false, _s2:false,
 
         async init(){
             const now=new Date();
@@ -148,11 +217,22 @@ function kartuStokApp() {
             this.sampai=now.toISOString().slice(0,10);
             const res=await apiFetch('/api/barang?per_page=100');
             if(res?.ok){const d=await res.json();this.barangList=d.data||[];}
+            this.$nextTick(()=>this.initS2());
+        },
+
+        initS2(){
+            const self=this;
+            $('#s2-barang-ks').select2({
+                placeholder:'— Pilih Barang —', width:'100%', dropdownParent:$('body')
+            }).on('change',function(){
+                self.filterBarang=$(this).val()||'';
+            });
+            this._s2=true;
         },
 
         setThisMonth(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); },
         setLastMonth(){ const n=new Date(); const y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); const m=n.getMonth()===0?11:n.getMonth()-1; this.dari=new Date(y,m,1).toISOString().slice(0,10); this.sampai=new Date(y,m+1,0).toISOString().slice(0,10); },
-        resetDates(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); this.report=null; },
+        resetDates(){ const n=new Date(); this.dari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.sampai=n.toISOString().slice(0,10); this.filterBarang=''; if(this._s2) $('#s2-barang-ks').val(null).trigger('change'); this.report=null; },
 
         async load(){
             if(!this.filterBarang||!this.dari||!this.sampai) return;
@@ -165,4 +245,9 @@ function kartuStokApp() {
     }
 }
 </script>
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@endpush
 @endsection

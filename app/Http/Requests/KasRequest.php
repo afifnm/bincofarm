@@ -8,6 +8,7 @@ use App\Enums\TipeKas;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+
 class KasRequest extends FormRequest
 {
     public function authorize(): bool
@@ -17,10 +18,7 @@ class KasRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('kas');
-
         return [
-            'kode'      => ['required', 'string', 'max:50', Rule::unique('kas', 'kode')->ignore($id)],
             'nama'      => ['required', 'string', 'max:100'],
             'tipe'      => ['required', Rule::enum(TipeKas::class)],
             'saldo_awal'=> ['required', 'numeric', 'min:0'],

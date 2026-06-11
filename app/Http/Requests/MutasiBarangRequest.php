@@ -15,6 +15,14 @@ class MutasiBarangRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'barang_id' => $this->barang_id !== null && $this->barang_id !== '' ? (int) $this->barang_id : $this->barang_id,
+            'kas_id'    => $this->kas_id    !== null && $this->kas_id    !== '' ? (int) $this->kas_id    : $this->kas_id,
+        ]);
+    }
+
     public function rules(): array
     {
         return [

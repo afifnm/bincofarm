@@ -1,6 +1,81 @@
 @extends('layouts.app')
 @section('title', 'Mutasi Barang')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<style>
+.select2-container { width: 100% !important; }
+.select2-container--default .select2-selection--single {
+    background: var(--color-bg) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 10px !important;
+    height: 41px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--color-text) !important;
+    line-height: 39px !important;
+    padding-left: 14px !important;
+    padding-right: 30px !important;
+    font-size: 0.875rem !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--color-text-muted) !important;
+    opacity: 0.7;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 39px !important;
+    right: 8px !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(5,150,105,.12) !important;
+    outline: none !important;
+}
+.select2-dropdown {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+    z-index: 9999 !important;
+    overflow: hidden;
+}
+.select2-search--dropdown { padding: 8px !important; }
+.select2-search--dropdown .select2-search__field {
+    background: var(--color-bg) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    color: var(--color-text) !important;
+    font-size: 0.875rem !important;
+    padding: 7px 10px !important;
+    outline: none !important;
+}
+.select2-search--dropdown .select2-search__field:focus { border-color: var(--color-primary) !important; }
+.select2-results__options { padding: 4px !important; }
+.select2-results__option {
+    color: var(--color-text) !important;
+    font-size: 0.875rem !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+}
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--color-primary-soft) !important;
+    color: var(--color-primary) !important;
+}
+.select2-container--default .select2-results__option--selected {
+    background: var(--color-primary-soft) !important;
+    color: var(--color-primary) !important;
+    font-weight: 500 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    color: var(--color-text-muted) !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    margin-right: 2px !important;
+}
+</style>
+@endpush
+
 @section('content')
 <div x-data="mutasiApp()" x-init="init()">
 
@@ -11,15 +86,15 @@
             <p class="text-xs mt-0.5" style="color:var(--color-text-muted);">Pencatatan keluar masuk dan penyesuaian stok</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            <button @click="openCreate('masuk')" class="btn btn-sm btn-success">
+            <button x-show="!filterVoid" @click="openCreate('masuk')" class="btn btn-sm btn-success">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>
                 Masuk
             </button>
-            <button @click="openCreate('keluar')" class="btn btn-sm btn-danger">
+            <button x-show="!filterVoid" @click="openCreate('keluar')" class="btn btn-sm btn-danger">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"/></svg>
                 Keluar
             </button>
-            <button @click="openCreate('penyesuaian')" class="btn btn-sm btn-secondary">
+            <button x-show="!filterVoid" @click="openCreate('penyesuaian')" class="btn btn-sm btn-secondary">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
                 Sesuaian
             </button>
@@ -38,7 +113,7 @@
             </div>
             <div class="flex-1 min-w-36">
                 <label class="form-label">Barang</label>
-                <select x-model="filterBarang" @change="load()" class="form-input">
+                <select id="s2-filter-barang" class="form-input">
                     <option value="">Semua Barang</option>
                     <template x-for="b in barangList" :key="b.id"><option :value="b.id" x-text="b.nama"></option></template>
                 </select>
@@ -61,9 +136,14 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
                 Bulan Lalu
             </button>
-            <button type="button" @click="resetDates()" class="filter-pill text-xs px-3 py-1">
+            <button type="button" @click="resetDates()" class="filter-pill text-xs px-3 py-1" x-show="!filterVoid">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                 Reset
+            </button>
+            <button type="button" @click="filterVoid=!filterVoid; load()" class="filter-pill text-xs px-3 py-1"
+                    :style="filterVoid ? 'background:#FEE2E2;color:#B91C1C;border-color:#FECACA;font-weight:600;' : ''">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                Void
             </button>
         </div>
     </div>
@@ -104,7 +184,7 @@
                                 <div>
                                     <p class="font-semibold text-xs" style="color:var(--color-text);" x-text="m.nomor"></p>
                                     <p class="text-xs" style="color:var(--color-text-muted);"
-                                       x-text="m.tanggal + (m.keterangan ? ' — ' + m.keterangan : '')"></p>
+                                       x-text="formatDate(m.tanggal) + (m.keterangan ? ' — ' + m.keterangan : '')"></p>
                                     {{-- Show barang on mobile --}}
                                     <p class="text-xs md:hidden mt-0.5 font-medium" style="color:var(--color-text);" x-text="m.barang?.nama || '-'"></p>
                                 </div>
@@ -189,7 +269,7 @@
                 </div>
                 <div>
                     <label class="form-label">Barang</label>
-                    <select x-model="form.barang_id" required class="form-input">
+                    <select id="s2-form-barang" class="form-input">
                         <template x-for="b in barangList" :key="b.id">
                             <option :value="b.id" x-text="b.nama + ' (stok: ' + b.stok + ' ' + b.satuan + ')'"></option>
                         </template>
@@ -249,7 +329,7 @@
     <div x-show="confirmVoid" x-cloak
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <x-modal title="Void Mutasi">
+        <x-modal title="Void Mutasi" closeExpr="confirmVoid = false">
             <p class="text-sm mb-5" style="color:var(--color-text);">
                 Void mutasi <strong x-text="voidTarget?.nomor"></strong>? Stok akan dikembalikan.
             </p>
@@ -266,8 +346,8 @@ function mutasiApp() {
     return {
         items:[], loading:true, open:false, saving:false,
         confirmVoid:false, voidTarget:null, periodeClosed:false, linkKas:false,
-        barangList:[], kasList:[],
-        search:'', filterBarang:'', filterDari:'', filterSampai:'',
+        barangList:[], kasList:[], _s2:false,
+        search:'', filterBarang:'', filterDari:'', filterSampai:'', filterVoid:false,
         meta:{ current_page:1, last_page:1, from:1, to:1, total:0 },
         form:{barang_id:'',tanggal:'',tipe:'masuk',qty:'',harga_satuan:0,referensi:'',keterangan:'',kas_id:''},
 
@@ -289,11 +369,12 @@ function mutasiApp() {
             this.filterDari=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
             this.filterSampai=now.toISOString().slice(0,10);
             await this.load();
+            this.$nextTick(()=>this.initS2());
         },
 
         setThisMonth(){ const n=new Date(); this.filterDari=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); this.filterSampai=n.toISOString().slice(0,10); this.load(); },
         setLastMonth(){ const n=new Date(); const y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); const m=n.getMonth()===0?11:n.getMonth()-1; this.filterDari=new Date(y,m,1).toISOString().slice(0,10); this.filterSampai=new Date(y,m+1,0).toISOString().slice(0,10); this.load(); },
-        resetDates(){ this.filterDari=''; this.filterSampai=''; this.filterBarang=''; this.search=''; this.load(); },
+        resetDates(){ this.filterDari=''; this.filterSampai=''; this.filterBarang=''; this.search=''; if(this._s2){$('#s2-filter-barang').val(null).trigger('change');}else{this.load();} },
 
         async load(page=1){
             this.loading=true;
@@ -302,6 +383,7 @@ function mutasiApp() {
             if(this.filterDari) url+=`&dari=${this.filterDari}`;
             if(this.filterSampai) url+=`&sampai=${this.filterSampai}`;
             if(this.search) url+=`&search=${encodeURIComponent(this.search)}`;
+            if(this.filterVoid) url+=`&hanya_void=1`;
             const res=await apiFetch(url);
             if(res?.ok){
                 const d=await res.json();
@@ -315,8 +397,26 @@ function mutasiApp() {
         goPage(p){ if(p!=='...'&&p>=1&&p<=this.meta.last_page) this.load(p); },
 
         openCreate(tipe){
-            this.form={barang_id:this.barangList[0]?.id||'',tanggal:new Date().toISOString().slice(0,10),tipe,qty:'',harga_satuan:0,referensi:'',keterangan:'',kas_id:''};
+            const defId=this.barangList[0]?.id||'';
+            this.form={barang_id:defId,tanggal:new Date().toISOString().slice(0,10),tipe,qty:'',harga_satuan:0,referensi:'',keterangan:'',kas_id:''};
             this.linkKas=false; this.periodeClosed=false; this.open=true;
+            if(this._s2) this.$nextTick(()=>$('#s2-form-barang').val(defId).trigger('change'));
+        },
+
+        initS2(){
+            const self=this;
+            $('#s2-filter-barang').select2({
+                placeholder:'Semua Barang', allowClear:true, width:'100%', dropdownParent:$('body')
+            }).on('change',function(){
+                self.filterBarang=$(this).val()||'';
+                self.load();
+            });
+            $('#s2-form-barang').select2({
+                placeholder:'Pilih Barang', width:'100%', dropdownParent:$('body')
+            }).on('change',function(){
+                self.form.barang_id=$(this).val()||'';
+            });
+            this._s2=true;
         },
 
         async checkPeriode(){
@@ -347,4 +447,9 @@ function mutasiApp() {
     }
 }
 </script>
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@endpush
 @endsection
