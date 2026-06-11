@@ -81,11 +81,12 @@ class LaporanGreenhouseController extends Controller
             ->pluck('total_panen_kg', 'greenhouse_id');
 
         $jualAgg = PenjualanMelon::query()
-            ->select('greenhouse_id', DB::raw('SUM(jumlah_kg) as total_jual_kg'), DB::raw('SUM(total) as total_nilai'))
-            ->when($request->filled('dari'), fn ($q) => $q->where('tanggal', '>=', $request->input('dari')))
-            ->when($request->filled('sampai'), fn ($q) => $q->where('tanggal', '<=', $request->input('sampai')))
-            ->when($request->filled('greenhouse_id'), fn ($q) => $q->where('greenhouse_id', $request->integer('greenhouse_id')))
-            ->groupBy('greenhouse_id')
+            ->join('penjualan_melon_item', 'penjualan_melon_item.penjualan_melon_id', '=', 'penjualan_melon.id')
+            ->select('penjualan_melon.greenhouse_id', DB::raw('SUM(penjualan_melon_item.jumlah_kg) as total_jual_kg'), DB::raw('SUM(penjualan_melon_item.subtotal) as total_nilai'))
+            ->when($request->filled('dari'), fn ($q) => $q->where('penjualan_melon.tanggal', '>=', $request->input('dari')))
+            ->when($request->filled('sampai'), fn ($q) => $q->where('penjualan_melon.tanggal', '<=', $request->input('sampai')))
+            ->when($request->filled('greenhouse_id'), fn ($q) => $q->where('penjualan_melon.greenhouse_id', $request->integer('greenhouse_id')))
+            ->groupBy('penjualan_melon.greenhouse_id')
             ->get()
             ->keyBy('greenhouse_id');
 

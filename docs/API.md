@@ -24,8 +24,9 @@ Referensi lengkap REST API Bincofarm (aplikasi keuangan/kas & inventori barang) 
 14. [Endpoint — Periode](#14-periode)
 15. [Endpoint — User Profile](#15-user-profile)
 16. [Endpoint — Activity Log](#16-activity-log)
-17. [Schema Objek JSON (untuk model Dart)](#17-schema-objek-json-untuk-model-dart)
-18. [Catatan Integrasi Flutter](#18-catatan-integrasi-flutter)
+17. [Endpoint — Greenhouse & Penjualan Melon](#17-greenhouse--penjualan-melon)
+18. [Schema Objek JSON (untuk model Dart)](#18-schema-objek-json-untuk-model-dart)
+19. [Catatan Integrasi Flutter](#19-catatan-integrasi-flutter)
 
 ---
 
@@ -56,7 +57,7 @@ Authorization: Bearer {token}         (untuk semua endpoint ber-auth)
 Alur untuk mobile (token-based):
 
 1. `POST /api/login` dengan `login` (email atau no. HP), `password`, dan `device_name` → response berisi `user` dan `token`.
-2. Simpan `token` secara aman (lihat [Catatan Integrasi Flutter](#18-catatan-integrasi-flutter)).
+2. Simpan `token` secara aman (lihat [Catatan Integrasi Flutter](#19-catatan-integrasi-flutter)).
 3. Kirim header `Authorization: Bearer {token}` di **semua** request berikutnya.
 4. `POST /api/logout` → token yang sedang dipakai di-revoke (dihapus dari server).
 5. Token **tidak memiliki masa kedaluwarsa** (`expiration: null` di config Sanctum), tetapi bisa di-revoke kapan saja — selalu tangani response 401.
@@ -930,7 +931,89 @@ Response `200`:
 
 ---
 
-## 17. Schema Objek JSON (untuk model Dart)
+## 17. Greenhouse & Penjualan Melon
+
+Modul untuk role `pj_gh` (Penanggung Jawab GH) dan `admin`. **Semua data otomatis dibatasi pada GH yang ditugaskan ke user** (`greenhouses.user_id`); admin melihat semua. Mengakses data GH lain → `403`.
+
+### Role & akses
+
+| Role | Akses |
+|---|---|
+| `admin` | semua endpoint, semua GH |
+| `inventory` | transaksi kas, mutasi barang, kartu stok, profil — **tidak** bisa modul GH |
+| `pj_gh` | greenhouse (baca), populasi, panen, penjualan, laporan GH — hanya GH miliknya |
+
+### Endpoint ringkas
+
+| Method | Path | Keterangan |
+|---|---|---|
+| GET | `/greenhouse` | List GH (pj_gh: hanya miliknya). `?semua=1` tanpa pagination |
+| GET | `/greenhouse/{id}` | Detail GH |
+| PUT | `/greenhouse/{id}/populasi` | Update populasi pohon (`total_pohon`, `pohon_hidup`, `catatan`) |
+| GET | `/greenhouse/{id}/populasi/histori` | Histori perubahan populasi |
+| GET | `/jenis-melon` | List jenis melon. `?semua=1` tanpa pagination |
+| GET/POST/PUT/DELETE | `/panen-melon` | CRUD catatan panen |
+| GET/POST/PUT/DELETE | `/penjualan-melon` | CRUD penjualan (lihat detail di bawah) |
+| GET | `/laporan/greenhouse/panen` | Rekap panen per GH/jenis/grade |
+| GET | `/laporan/greenhouse/perbandingan` | Perbandingan antar GH |
+
+### POST `/penjualan-melon` — Penjualan multi-item
+
+Satu nota berisi 1+ item melon. Total dihitung server. Kas masuk tercatat otomatis ke kas yang terhubung dengan GH. Nomor nota digenerate server dengan format `NJL-YYYYMMDD-0001`.
+
+Request body:
+
+```json
+{
+  "greenhouse_id": 1,
+  "nama_pembeli": "Budi",
+  "tanggal": "2026-06-12",
+  "items": [
+    { "jenis_melon_id": 1, "jumlah_kg": 2.5, "harga_per_kg": 25000 },
+    { "jenis_melon_id": 2, "jumlah_kg": 1.25, "harga_per_kg": 30000 }
+  ]
+}
+```
+
+| Field | Tipe | Wajib | Aturan |
+|---|---|---|---|
+| `greenhouse_id` | int | ya | harus GH yang ditugaskan ke user (kecuali admin) |
+| `nama_pembeli` | string | ya | max 150 |
+| `tanggal` | date | ya | `YYYY-MM-DD` |
+| `items` | array | ya | min 1 item |
+| `items.*.jenis_melon_id` | int | ya | exists |
+| `items.*.jumlah_kg` | number | ya | min 0.01 |
+| `items.*.harga_per_kg` | number | ya | min 0 |
+
+Response `201` (objek langsung):
+
+```json
+{
+  "id": 1,
+  "no_nota": "NJL-20260612-0001",
+  "greenhouse_id": 1,
+  "greenhouse": { "id": 1, "nama": "GH Kayuapak", "lokasi": "Kayuapak" },
+  "nama_pembeli": "Budi",
+  "items": [
+    { "id": 1, "jenis_melon_id": 1, "jenis_melon": { "id": 1, "nama": "Honey" }, "jumlah_kg": 2.5, "harga_per_kg": 25000, "subtotal": 62500 },
+    { "id": 2, "jenis_melon_id": 2, "jenis_melon": { "id": 2, "nama": "Dalmation" }, "jumlah_kg": 1.25, "harga_per_kg": 30000, "subtotal": 37500 }
+  ],
+  "total_kg": 3.75,
+  "total": 100000,
+  "tanggal": "2026-06-12",
+  "user_id": 1,
+  "user": { "id": 1, "name": "Administrator" }
+}
+```
+
+- `PUT /penjualan-melon/{id}`: body sama dengan POST; item lama **diganti seluruhnya** dengan `items` baru, transaksi kas lama di-void dan dibuat baru.
+- `DELETE /penjualan-melon/{id}`: soft delete + void transaksi kas.
+- `GET /penjualan-melon`: filter `?search=` (pembeli/no nota), `greenhouse_id`, `jenis_melon_id`, `dari`, `sampai`, `per_page`.
+- Data `items`, `no_nota`, `total_kg`, `greenhouse.lokasi`, dan `user.name` pada response cukup untuk merender nota struk thermal 32 kolom di sisi mobile.
+
+---
+
+## 18. Schema Objek JSON (untuk model Dart)
 
 Tipe Dart yang disarankan per field. Semua field uang/qty dikirim sebagai JSON number — parse dengan `(json['x'] as num).toDouble()` agar aman terhadap nilai bulat.
 
@@ -1126,7 +1209,7 @@ PaginationMeta {
 
 ---
 
-## 18. Catatan Integrasi Flutter
+## 19. Catatan Integrasi Flutter
 
 ### Penyimpanan token
 

@@ -32,8 +32,8 @@ class JenisMelon extends Model
         return $this->hasMany(PanenMelon::class);
     }
 
-    public function penjualanMelon(): HasMany
+    public function penjualanMelonItems(): HasMany
     {
-        return $this->hasMany(PenjualanMelon::class);
+        return $this->hasMany(PenjualanMelonItem::class);
     }
 }

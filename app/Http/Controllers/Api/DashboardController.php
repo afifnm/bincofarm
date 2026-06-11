@@ -81,8 +81,9 @@ class DashboardController extends Controller
             ->whereBetween('tanggal', [$bulanIni, $akhirBulan])
             ->sum('berat');
 
-        $jualBulanIni = (float) PenjualanMelon::whereIn('greenhouse_id', $ghIds)
-            ->whereBetween('tanggal', [$bulanIni, $akhirBulan])
+        $jualBulanIni = (float) \App\Models\PenjualanMelonItem::whereHas('penjualan', fn ($q) => $q
+            ->whereIn('greenhouse_id', $ghIds)
+            ->whereBetween('tanggal', [$bulanIni, $akhirBulan]))
             ->sum('jumlah_kg');
 
         return response()->json([

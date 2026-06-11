@@ -20,7 +20,7 @@ class PenjualanMelonController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = PenjualanMelon::with(['greenhouse', 'jenisMelon', 'user'])
+        $query = PenjualanMelon::with(['greenhouse', 'items.jenisMelon', 'user'])
             ->orderByDesc('tanggal')
             ->orderByDesc('id');
 
@@ -33,7 +33,7 @@ class PenjualanMelonController extends Controller
             $query->where('greenhouse_id', $request->integer('greenhouse_id'));
         }
         if ($request->filled('jenis_melon_id')) {
-            $query->where('jenis_melon_id', $request->integer('jenis_melon_id'));
+            $query->whereRelation('items', 'jenis_melon_id', $request->integer('jenis_melon_id'));
         }
         if ($request->filled('dari')) {
             $query->where('tanggal', '>=', $request->input('dari'));
@@ -43,7 +43,8 @@ class PenjualanMelonController extends Controller
         }
         if ($request->filled('search')) {
             $q = $request->input('search');
-            $query->where('nama_pembeli', 'like', "%{$q}%");
+            $query->where(fn ($s) => $s->where('nama_pembeli', 'like', "%{$q}%")
+                ->orWhere('no_nota', 'like', "%{$q}%"));
         }
 
         $perPage = $request->integer('per_page', 20);
@@ -56,15 +57,15 @@ class PenjualanMelonController extends Controller
         abort_unless($request->user()->canAccessGreenhouse((int) $data['greenhouse_id']), 403, 'Anda tidak ditugaskan pada greenhouse ini.');
         $data['user_id'] = $request->user()->id;
         $penjualan       = $this->penjualanService->simpan($data);
-        $penjualan->load(['greenhouse', 'jenisMelon']);
-        ActivityLog::record('create', "Penjualan melon GH #{$penjualan->greenhouse_id} Rp " . number_format((float)$penjualan->total, 0, ',', '.'), $penjualan, [], $request);
+        $penjualan->load(['greenhouse', 'items.jenisMelon', 'user']);
+        ActivityLog::record('create', "Penjualan melon {$penjualan->no_nota} GH #{$penjualan->greenhouse_id} Rp " . number_format((float)$penjualan->total, 0, ',', '.'), $penjualan, [], $request);
         return response()->json(new PenjualanMelonResource($penjualan), 201);
     }
 
     public function show(Request $request, PenjualanMelon $penjualanMelon): PenjualanMelonResource
     {
         abort_unless($request->user()->canAccessGreenhouse($penjualanMelon->greenhouse_id), 403);
-        $penjualanMelon->load(['greenhouse', 'jenisMelon', 'user']);
+        $penjualanMelon->load(['greenhouse', 'items.jenisMelon', 'user']);
         return new PenjualanMelonResource($penjualanMelon);
     }
 
@@ -75,15 +76,15 @@ class PenjualanMelonController extends Controller
         abort_unless($request->user()->canAccessGreenhouse((int) $data['greenhouse_id']), 403, 'Anda tidak ditugaskan pada greenhouse ini.');
         $data['user_id'] = $request->user()->id;
         $penjualan       = $this->penjualanService->update($penjualanMelon, $data);
-        $penjualan->load(['greenhouse', 'jenisMelon']);
-        ActivityLog::record('update', "Update penjualan melon #{$penjualan->id}", $penjualan, [], $request);
+        $penjualan->load(['greenhouse', 'items.jenisMelon', 'user']);
+        ActivityLog::record('update', "Update penjualan melon {$penjualan->no_nota}", $penjualan, [], $request);
         return new PenjualanMelonResource($penjualan);
     }
 
     public function destroy(Request $request, PenjualanMelon $penjualanMelon): JsonResponse
     {
         abort_unless($request->user()->canAccessGreenhouse($penjualanMelon->greenhouse_id), 403);
-        ActivityLog::record('delete', "Hapus penjualan melon #{$penjualanMelon->id}", $penjualanMelon);
+        ActivityLog::record('delete', "Hapus penjualan melon {$penjualanMelon->no_nota}", $penjualanMelon);
         $this->penjualanService->hapus($penjualanMelon);
         return response()->json(['message' => 'Penjualan dihapus dan transaksi kas di-void.']);
     }
