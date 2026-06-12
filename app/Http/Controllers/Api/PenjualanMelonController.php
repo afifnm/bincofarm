@@ -20,9 +20,12 @@ class PenjualanMelonController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = PenjualanMelon::with(['greenhouse', 'items.jenisMelon', 'user'])
-            ->orderByDesc('tanggal')
-            ->orderByDesc('id');
+        $hanyadVoid = $request->boolean('hanya_void');
+        $query = $hanyadVoid
+            ? PenjualanMelon::onlyTrashed()->with(['greenhouse', 'items.jenisMelon', 'user'])
+            : PenjualanMelon::with(['greenhouse', 'items.jenisMelon', 'user']);
+
+        $query->orderByDesc('tanggal')->orderByDesc('id');
 
         // PJ GH hanya melihat penjualan di GH yang ditugaskan padanya
         if ($request->user()->isPjGh()) {

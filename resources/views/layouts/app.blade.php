@@ -64,7 +64,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-xs font-semibold truncate" style="color:var(--color-text);">{{ auth()->user()->name }}</p>
-                            <p class="text-xs truncate" style="color:var(--color-text-muted);">{{ auth()->user()->role }}</p>
+                            <p class="text-xs truncate" style="color:var(--color-text-muted);">{{ ['admin'=>'Admin','inventory'=>'Inventory & Kas','pj_gh'=>'Penanggung Jawab GH'][auth()->user()->role] ?? auth()->user()->role }}</p>
                         </div>
                     </a>
                     <button onclick="event.preventDefault();fetch('/api/logout',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content}}).then(()=>location.href='/login')"
@@ -100,10 +100,16 @@
                         </div>
                         <span class="text-sm font-bold" style="color:var(--color-text);">Bincofarm</span>
                     </div>
-                    {{-- Page title (desktop) --}}
-                    <h1 class="hidden md:block text-sm font-semibold" style="color:var(--color-text);">
-                        @yield('title', 'Dashboard')
-                    </h1>
+                    {{-- Page title + breadcrumb (desktop) --}}
+                    <div class="hidden md:flex flex-col justify-center">
+                        @hasSection('breadcrumb')
+                            <nav class="flex items-center gap-1.5 text-xs" style="color:var(--color-text-muted);">
+                                @yield('breadcrumb')
+                            </nav>
+                        @else
+                            <h1 class="text-sm font-semibold" style="color:var(--color-text);">@yield('title', 'Dashboard')</h1>
+                        @endif
+                    </div>
                 </div>
                 <div class="flex items-center gap-1.5">
                     {{-- Dark mode toggle --}}
@@ -149,6 +155,19 @@
     </nav>
 
     <script>
+    window.openModal = function(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+    };
+    window.closeModal = function(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    };
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        document.querySelectorAll('[id$="Modal"]:not(.hidden)').forEach(m => m.classList.add('hidden'));
+    });
+
     window.apiFetch = async (url, options = {}) => {
         const defaults = {
             headers: {
@@ -198,6 +217,9 @@
         const initFp = el => { if (!el._flatpickr) flatpickr(el, fpConfig); };
 
         document.addEventListener('alpine:initialized', function() {
+            document.querySelectorAll('input[type="date"]').forEach(initFp);
+        });
+        document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('input[type="date"]').forEach(initFp);
         });
 

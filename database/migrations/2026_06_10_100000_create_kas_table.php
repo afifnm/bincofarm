@@ -12,12 +12,12 @@ return new class extends Migration
     {
         Schema::create('kas', function (Blueprint $table): void {
             $table->id();
-            $table->string('kode')->unique();
             $table->string('nama');
             $table->enum('tipe', ['tunai', 'bank', 'ewallet'])->default('tunai');
             $table->decimal('saldo_awal', 18, 2)->default(0);
             $table->decimal('saldo_berjalan', 18, 2)->default(0);
             $table->boolean('is_active')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

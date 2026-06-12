@@ -8,7 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PanenMelonRequest;
 use App\Http\Resources\PanenMelonResource;
 use App\Models\ActivityLog;
+use App\Models\Greenhouse;
 use App\Models\PanenMelon;
+use App\Models\SaldoPeriode;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -50,6 +53,7 @@ class PanenMelonController extends Controller
     {
         $data = $request->validated();
         abort_unless($request->user()->canAccessGreenhouse((int) $data['greenhouse_id']), 403, 'Anda tidak ditugaskan pada greenhouse ini.');
+        $this->assertPeriodeTerbuka((int) $data['greenhouse_id'], Carbon::parse($data['tanggal']));
         $data['user_id'] = $request->user()->id;
         $panen           = PanenMelon::create($data);
         $panen->load(['greenhouse', 'jenisMelon']);
@@ -69,6 +73,7 @@ class PanenMelonController extends Controller
         abort_unless($request->user()->canAccessGreenhouse($panenMelon->greenhouse_id), 403);
         $data = $request->validated();
         abort_unless($request->user()->canAccessGreenhouse((int) $data['greenhouse_id']), 403, 'Anda tidak ditugaskan pada greenhouse ini.');
+        $this->assertPeriodeTerbuka((int) $data['greenhouse_id'], Carbon::parse($data['tanggal']));
         $data['user_id'] = $request->user()->id;
         $panenMelon->update($data);
         $panenMelon->load(['greenhouse', 'jenisMelon']);
@@ -79,8 +84,25 @@ class PanenMelonController extends Controller
     public function destroy(Request $request, PanenMelon $panenMelon): JsonResponse
     {
         abort_unless($request->user()->canAccessGreenhouse($panenMelon->greenhouse_id), 403);
+        $this->assertPeriodeTerbuka($panenMelon->greenhouse_id, Carbon::parse($panenMelon->tanggal));
         ActivityLog::record('delete', "Hapus panen #{$panenMelon->id}", $panenMelon);
         $panenMelon->delete();
         return response()->json(['message' => 'Data panen dihapus.']);
+    }
+
+    private function assertPeriodeTerbuka(int $greenhouseId, Carbon $tanggal): void
+    {
+        $gh      = Greenhouse::find($greenhouseId);
+        $kasId   = $gh?->kas_id;
+        $periode = Carbon::create($tanggal->year, $tanggal->month, 1)->toDateString();
+
+        $closed = SaldoPeriode::where('is_closed', true)
+            ->where('periode', $periode)
+            ->when($kasId, fn ($q) => $q->where('kas_id', $kasId))
+            ->exists();
+
+        if ($closed) {
+            abort(409, "Periode {$tanggal->format('Y-m')} sudah ditutup. Data panen tidak dapat diubah.");
+        }
     }
 }

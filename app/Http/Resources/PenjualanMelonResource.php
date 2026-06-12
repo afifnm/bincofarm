@@ -33,6 +33,7 @@ class PenjualanMelonResource extends JsonResource
             'user_id'       => $this->user_id,
             'user'          => $this->whenLoaded('user', fn () => ['id' => $this->user->id, 'name' => $this->user->name]),
             'created_at'    => $this->created_at,
+            'deleted_at'    => $this->deleted_at,
         ];
     }
 }

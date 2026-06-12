@@ -74,6 +74,16 @@ class TransaksiKasController extends Controller
 
     public function destroy(TransaksiKas $transaksiKas): JsonResponse
     {
+        if ($transaksiKas->sumber_type) {
+            $sumber = class_basename($transaksiKas->sumber_type);
+            $label  = match ($sumber) {
+                'PenjualanMelon' => 'Batalkan melalui halaman Penjualan Melon.',
+                'MutasiBarang'   => 'Batalkan melalui halaman Mutasi Barang.',
+                default          => 'Transaksi ini tidak dapat dibatalkan dari halaman ini.',
+            };
+            abort(409, "Transaksi berasal dari {$sumber}. {$label}");
+        }
+
         if ($transaksiKas->transfer_group) {
             $this->transferService->voidTransfer($transaksiKas->transfer_group);
         } else {

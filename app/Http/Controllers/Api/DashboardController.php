@@ -11,6 +11,7 @@ use App\Models\Barang;
 use App\Models\Kas;
 use App\Models\PanenMelon;
 use App\Models\PenjualanMelon;
+use App\Models\PopulasiPohonHistori;
 use App\Models\TransaksiKas;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -86,20 +87,47 @@ class DashboardController extends Controller
             ->whereBetween('tanggal', [$bulanIni, $akhirBulan]))
             ->sum('jumlah_kg');
 
+        $rekapPanenPerGh = PanenMelon::selectRaw('greenhouse_id, SUM(berat) as total_kg, COUNT(*) as jumlah_panen')
+            ->whereIn('greenhouse_id', $ghIds)
+            ->whereBetween('tanggal', [$bulanIni, $akhirBulan])
+            ->groupBy('greenhouse_id')
+            ->get()
+            ->keyBy('greenhouse_id');
+
+        $historiTerbaru = PopulasiPohonHistori::whereIn('greenhouse_id', $ghIds)
+            ->with('user')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn ($h) => [
+                'greenhouse_id'   => $h->greenhouse_id,
+                'greenhouse_nama' => $greenhouses->firstWhere('id', $h->greenhouse_id)?->nama,
+                'total_pohon_baru'=> $h->total_pohon_baru,
+                'pohon_hidup_baru'=> $h->pohon_hidup_baru,
+                'pohon_mati_baru' => $h->pohon_mati_baru,
+                'catatan'         => $h->catatan,
+                'user_nama'       => $h->user?->name,
+                'created_at'      => $h->created_at,
+            ]);
+
         return response()->json([
             'total_saldo'  => null,
             'kas'          => [],
             'stok_menipis' => [],
             'greenhouse'   => [
                 'daftar' => $greenhouses->map(fn ($gh) => [
-                    'id'          => $gh->id,
-                    'nama'        => $gh->nama,
-                    'lokasi'      => $gh->lokasi,
-                    'pohon_hidup' => $gh->populasi?->pohon_hidup ?? 0,
-                    'pohon_mati'  => $gh->populasi?->pohon_mati ?? 0,
+                    'id'              => $gh->id,
+                    'nama'            => $gh->nama,
+                    'lokasi'          => $gh->lokasi,
+                    'pohon_hidup'     => $gh->populasi?->pohon_hidup ?? 0,
+                    'pohon_mati'      => $gh->populasi?->pohon_mati ?? 0,
+                    'total_pohon'     => $gh->populasi?->total_pohon ?? 0,
+                    'panen_bulan_ini' => (float) ($rekapPanenPerGh[$gh->id]?->total_kg ?? 0),
+                    'jumlah_panen'    => (int) ($rekapPanenPerGh[$gh->id]?->jumlah_panen ?? 0),
                 ])->values(),
                 'panen_bulan_ini_kg' => $panenBulanIni,
                 'jual_bulan_ini_kg'  => $jualBulanIni,
+                'histori_populasi'   => $historiTerbaru,
             ],
             'periode_info' => [
                 'bulan' => Carbon::now()->format('Y-m'),

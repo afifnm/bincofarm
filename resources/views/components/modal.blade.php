@@ -1,27 +1,21 @@
-@props(['name' => 'modal', 'title' => '', 'maxWidth' => 'max-w-lg', 'closeExpr' => 'open = false'])
+@props(['id', 'title' => '', 'maxWidth' => 'max-w-lg'])
 
-{{-- The outer x-show wrapper in each page controls visibility.
-     This component provides only the backdrop + panel visual structure. --}}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4"
-     @keydown.escape.window="{{ $closeExpr }}">
+<div id="{{ $id }}"
+     class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.5);">
 
     {{-- Backdrop --}}
-    <div class="absolute inset-0"
-         style="background:rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);"
-         @click="{{ $closeExpr }}"></div>
+    <div class="absolute inset-0" onclick="closeModal('{{ $id }}')"></div>
 
     {{-- Panel --}}
-    <div class="relative w-full {{ $maxWidth }} rounded-2xl shadow-2xl"
-         style="background:var(--color-surface); border:1px solid var(--color-border);"
-         @click.stop>
+    <div class="relative w-full {{ $maxWidth }} rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+         style="background:var(--color-surface);border:1px solid var(--color-border);"
+         onclick="event.stopPropagation()">
 
-        {{-- Header --}}
-        @if($title || isset($header))
+        @if($title)
         <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--color-border);">
-            <h3 class="text-sm font-semibold" style="color:var(--color-text);">
-                {{ $title }}{{ $header ?? '' }}
-            </h3>
-            <button @click="{{ $closeExpr }}"
+            <h3 class="text-sm font-semibold" style="color:var(--color-text);">{{ $title }}</h3>
+            <button type="button" onclick="closeModal('{{ $id }}')"
                     class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
                     style="color:var(--color-text-muted);"
                     onmouseover="this.style.background='var(--color-bg)'"
@@ -33,8 +27,7 @@
         </div>
         @endif
 
-        {{-- Content --}}
-        <div class="px-5 py-5 max-h-[80vh] overflow-y-auto">
+        <div class="px-5 py-5">
             {{ $slot }}
         </div>
     </div>

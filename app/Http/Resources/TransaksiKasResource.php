@@ -24,6 +24,8 @@ class TransaksiKasResource extends JsonResource
             'jumlah'         => (float) $this->jumlah,
             'keterangan'     => $this->keterangan,
             'transfer_group' => $this->transfer_group,
+            'sumber_type'    => $this->sumber_type,
+            'sumber_id'      => $this->sumber_id,
             'is_void'        => $this->is_void,
             'void_at'        => $this->void_at,
             'user_id'        => $this->user_id,

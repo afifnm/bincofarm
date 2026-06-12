@@ -1,9 +1,14 @@
 @extends('layouts.app')
 @section('title', 'Greenhouse — Penjualan Melon')
 
+@section('breadcrumb')
+    <span>Greenhouse</span>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span style="color:var(--color-primary);">Penjualan Melon</span>
+@endsection
+
 @push('styles')
 <style>
-    /* Nota struk: hanya area nota yang tercetak */
     #nota-print { display: none; }
     @media print {
         body * { visibility: hidden; }
@@ -25,14 +30,7 @@
 @endpush
 
 @section('content')
-<div x-data="penjualanMelonApp()" x-init="init()">
-
-    {{-- Breadcrumb --}}
-    <nav class="flex items-center gap-1.5 text-xs mb-4" style="color:var(--color-text-muted);">
-        <span>Greenhouse</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        <span style="color:var(--color-primary);">Penjualan Melon</span>
-    </nav>
+<div>
 
     {{-- Page header --}}
     <div class="page-header">
@@ -40,7 +38,7 @@
             <h2 class="text-lg font-semibold tracking-tight" style="color:var(--color-text);">Penjualan Melon</h2>
             <p class="text-xs mt-0.5" style="color:var(--color-text-muted);">Satu nota bisa berisi beberapa jenis melon. Kas masuk tercatat otomatis</p>
         </div>
-        <button @click="openCreate()" class="btn btn-primary">
+        <button id="btnAddPenjualan" onclick="openCreate()" class="btn btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
@@ -50,31 +48,35 @@
 
     {{-- Filter bar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
-        <div class="relative flex-1 min-w-[150px] md:flex-none md:w-48">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-            </svg>
-            <input type="text" x-model="filter.search" @input.debounce.300ms="load()" placeholder="Cari pembeli / no nota..."
-                   class="form-input pl-9 w-full"/>
+        <div id="normalFilters" class="flex flex-wrap items-center gap-2 md:gap-3 flex-1">
+            <div class="relative flex-1 min-w-[150px] md:flex-none md:w-48">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+                <input type="text" id="filterSearch" oninput="searchDebounce(this.value)" placeholder="Cari pembeli / no nota..."
+                       class="form-input pl-9 w-full"/>
+            </div>
+            <select id="filterGh" onchange="app.filter.greenhouse_id=this.value;load()" class="form-input w-auto min-w-[130px]">
+                <option value="">Semua GH</option>
+            </select>
+            <input type="date" id="filterDari" onchange="app.filter.dari=this.value;load()" class="form-input w-auto" placeholder="Dari"/>
+            <input type="date" id="filterSampai" onchange="app.filter.sampai=this.value;load()" class="form-input w-auto" placeholder="Sampai"/>
+            <button onclick="resetFilters()" class="btn btn-secondary text-xs">Reset</button>
         </div>
-        <select x-model="filter.greenhouse_id" @change="load()" class="form-input w-auto min-w-[130px]">
-            <option value="">Semua GH</option>
-            <template x-for="gh in greenhouses" :key="gh.id">
-                <option :value="gh.id" x-text="gh.nama"></option>
-            </template>
-        </select>
-        <input type="date" x-model="filter.dari" @change="load()" class="form-input w-auto" placeholder="Dari"/>
-        <input type="date" x-model="filter.sampai" @change="load()" class="form-input w-auto" placeholder="Sampai"/>
-        <button @click="filter={search:'',greenhouse_id:'',dari:'',sampai:''};load()" class="btn btn-secondary text-xs">Reset</button>
+        <button id="btnVoid" type="button" onclick="toggleVoidFilter()"
+                class="filter-pill text-xs px-3 py-1.5 flex items-center gap-1.5">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            Void
+        </button>
     </div>
 
-    {{-- Loading --}}
-    <div x-show="loading" class="space-y-2">
+    {{-- Loading skeleton --}}
+    <div id="skeleton" class="space-y-2">
         @for($i=0;$i<5;$i++)<div class="skeleton rounded-xl h-12"></div>@endfor
     </div>
 
-    {{-- ══════ Desktop table (md+) ══════ --}}
-    <div x-show="!loading" x-cloak class="table-wrap hidden md:block">
+    {{-- Desktop table --}}
+    <div id="desktopWrap" class="hidden table-wrap hidden md:block">
         <table class="w-full text-sm">
             <thead class="tbl-head">
                 <tr>
@@ -88,246 +90,136 @@
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
-            <tbody>
-                <template x-for="pj in items" :key="pj.id">
-                    <tr class="tbl-row">
-                        <td class="tbl-cell text-xs font-mono font-semibold" style="color:var(--color-primary);" x-text="pj.no_nota || '—'"></td>
-                        <td class="tbl-cell text-sm" x-text="formatDate(pj.tanggal)"></td>
-                        <td class="tbl-cell text-sm" x-text="pj.greenhouse?.nama || '—'"></td>
-                        <td class="tbl-cell text-sm font-medium" x-text="pj.nama_pembeli"></td>
-                        <td class="tbl-cell text-xs hidden lg:table-cell" style="color:var(--color-text-muted);"
-                            x-text="(pj.items || []).map(i => `${i.jenis_melon?.nama || '?'} ${fmtKg(i.jumlah_kg)}kg`).join(', ')"></td>
-                        <td class="tbl-cell text-right hidden lg:table-cell" x-text="fmtKg(pj.total_kg)"></td>
-                        <td class="tbl-cell text-right font-bold" style="color:var(--color-primary);" x-text="'Rp ' + fmtRp(pj.total)"></td>
-                        <td class="tbl-cell">
-                            <div class="flex items-center justify-center gap-1">
-                                <button @click="openNota(pj)" title="Cetak Nota"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                                        style="color:var(--color-text-muted);"
-                                        onmouseover="this.style.background='var(--color-bg)';this.style.color='#059669'"
-                                        onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
-                                </button>
-                                <button @click="openEdit(pj)" title="Edit"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                                        style="color:var(--color-text-muted);"
-                                        onmouseover="this.style.background='var(--color-bg)';this.style.color='var(--color-primary)'"
-                                        onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
-                                </button>
-                                <button @click="openDelete(pj)" title="Hapus"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                                        style="color:var(--color-text-muted);"
-                                        onmouseover="this.style.background='#FEE2E2';this.style.color='#B91C1C'"
-                                        onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </template>
-                <tr x-show="!loading && items.length===0">
-                    <td colspan="8" class="tbl-cell text-center py-12" style="color:var(--color-text-muted);">
-                        <p class="text-sm font-medium">Belum ada data penjualan</p>
-                    </td>
-                </tr>
-            </tbody>
+            <tbody id="desktopTbl"></tbody>
         </table>
     </div>
 
-    {{-- ══════ Mobile card list (< md) ══════ --}}
-    <div x-show="!loading" x-cloak class="md:hidden space-y-3">
-        <template x-for="pj in items" :key="pj.id">
-            <div class="rounded-2xl p-4" style="background:var(--color-surface);border:1px solid var(--color-border);">
-                <div class="flex items-start justify-between gap-2 mb-2">
-                    <div class="min-w-0">
-                        <p class="text-xs font-mono font-semibold" style="color:var(--color-primary);" x-text="pj.no_nota || '—'"></p>
-                        <p class="text-sm font-semibold mt-0.5 truncate" style="color:var(--color-text);" x-text="pj.nama_pembeli"></p>
-                        <p class="text-xs" style="color:var(--color-text-muted);">
-                            <span x-text="formatDate(pj.tanggal)"></span> · <span x-text="pj.greenhouse?.nama || '—'"></span>
-                        </p>
-                    </div>
-                    <p class="text-base font-bold shrink-0" style="color:var(--color-primary);" x-text="'Rp ' + fmtRp(pj.total)"></p>
-                </div>
-                <div class="rounded-xl px-3 py-2 mb-3 space-y-1" style="background:var(--color-bg);">
-                    <template x-for="it in (pj.items || [])" :key="it.id">
-                        <div class="flex justify-between text-xs">
-                            <span style="color:var(--color-text);" x-text="`${it.jenis_melon?.nama || '?'} — ${fmtKg(it.jumlah_kg)} kg × Rp ${fmtRp(it.harga_per_kg)}`"></span>
-                            <span class="font-medium shrink-0 pl-2" style="color:var(--color-text);" x-text="'Rp ' + fmtRp(it.subtotal)"></span>
-                        </div>
-                    </template>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <button @click="openNota(pj)" class="btn btn-secondary justify-center text-xs py-2.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
-                        Nota
-                    </button>
-                    <button @click="openEdit(pj)" class="btn btn-secondary justify-center text-xs py-2.5">Edit</button>
-                    <button @click="openDelete(pj)" class="btn btn-secondary justify-center text-xs py-2.5" style="color:#B91C1C;">Hapus</button>
-                </div>
-            </div>
-        </template>
-        <div x-show="items.length===0" class="rounded-2xl py-12 text-center" style="background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-muted);">
-            <p class="text-sm font-medium">Belum ada data penjualan</p>
-        </div>
+    {{-- Mobile cards --}}
+    <div id="mobileWrap" class="hidden md:hidden">
+        <div id="mobileCards" class="space-y-3"></div>
     </div>
 
-    {{-- Pagination (shared) --}}
-    <div x-show="!loading && meta.last_page > 1" x-cloak class="flex items-center justify-between mt-4 px-1">
-        <p class="text-xs" style="color:var(--color-text-muted);">
-            <span x-text="meta.from"></span>–<span x-text="meta.to"></span> dari <span x-text="meta.total"></span>
-        </p>
+    {{-- Pagination --}}
+    <div id="pageBar" class="hidden flex items-center justify-between mt-4 px-1">
+        <p class="text-xs" id="pageInfo" style="color:var(--color-text-muted);"></p>
         <div class="flex gap-1">
-            <button @click="goPage(meta.current_page - 1)" :disabled="meta.current_page <= 1" class="w-9 h-9 flex items-center justify-center rounded-lg text-xs disabled:opacity-40" style="border:1px solid var(--color-border);background:var(--color-surface);">
+            <button id="btnPrev" onclick="load(app.meta.current_page-1)" class="w-9 h-9 flex items-center justify-center rounded-lg text-xs disabled:opacity-40" style="border:1px solid var(--color-border);background:var(--color-surface);">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <button @click="goPage(meta.current_page + 1)" :disabled="meta.current_page >= meta.last_page" class="w-9 h-9 flex items-center justify-center rounded-lg text-xs disabled:opacity-40" style="border:1px solid var(--color-border);background:var(--color-surface);">
+            <button id="btnNext" onclick="load(app.meta.current_page+1)" class="w-9 h-9 flex items-center justify-center rounded-lg text-xs disabled:opacity-40" style="border:1px solid var(--color-border);background:var(--color-surface);">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
     </div>
 
-    {{-- ══════ Modal Form (multi-item) ══════ --}}
-    <div x-show="open" x-cloak
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <x-modal maxWidth="max-w-2xl">
-            <template x-if="open">
-                <div>
-                    <h3 class="text-base font-semibold mb-5" style="color:var(--color-text);" x-text="editId ? 'Edit Penjualan' : 'Tambah Penjualan'"></h3>
-                    <form @submit.prevent="save" class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="form-label">Greenhouse</label>
-                                <select x-model="form.greenhouse_id" required class="form-input" :disabled="!!editId">
-                                    <option value="">— Pilih GH —</option>
-                                    <template x-for="gh in greenhouses" :key="gh.id">
-                                        <option :value="gh.id" x-text="gh.nama"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label">Tanggal</label>
-                                <input type="date" x-model="form.tanggal" required class="form-input"/>
-                            </div>
+    {{-- Modal Form (multi-item) --}}
+    <div id="formModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+        <div class="absolute inset-0" onclick="closeModal('formModal')"></div>
+        <div class="relative w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+             style="background:var(--color-surface);border:1px solid var(--color-border);" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--color-border);">
+                <h3 id="formTitle" class="text-sm font-semibold" style="color:var(--color-text);">Tambah Penjualan</h3>
+                <button type="button" onclick="closeModal('formModal')" class="w-7 h-7 flex items-center justify-center rounded-lg" style="color:var(--color-text-muted);" onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background=''">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-5 py-5">
+                <form id="penjualanForm" onsubmit="save(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label">Greenhouse</label>
+                            <select id="fGhId" required class="form-input">
+                                <option value="">— Pilih GH —</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="form-label">Nama Pembeli</label>
-                            <input type="text" x-model="form.nama_pembeli" required class="form-input" placeholder="Nama pembeli"/>
+                            <label class="form-label">Tanggal</label>
+                            <input type="date" id="fTanggal" required class="form-input"/>
                         </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nama Pembeli</label>
+                        <input type="text" id="fPembeli" required class="form-input" placeholder="Nama pembeli"/>
+                    </div>
 
-                        {{-- Item rows --}}
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="form-label mb-0">Item Melon</label>
-                                <button type="button" @click="addItem()" class="btn btn-secondary text-xs py-1.5">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                    Tambah Item
-                                </button>
-                            </div>
-                            <div class="space-y-2">
-                                <template x-for="(item, idx) in form.items" :key="idx">
-                                    <div class="rounded-xl p-3" style="background:var(--color-bg);border:1px solid var(--color-border);">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <select x-model="item.jenis_melon_id" required class="form-input flex-1">
-                                                <option value="">— Jenis Melon —</option>
-                                                <template x-for="jm in jenisList" :key="jm.id">
-                                                    <option :value="jm.id" x-text="jm.nama"></option>
-                                                </template>
-                                            </select>
-                                            <button type="button" @click="removeItem(idx)" :disabled="form.items.length === 1"
-                                                    class="w-9 h-9 flex items-center justify-center rounded-lg shrink-0 disabled:opacity-30"
-                                                    style="color:#B91C1C;border:1px solid var(--color-border);" title="Hapus item">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            </button>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label class="text-xs" style="color:var(--color-text-muted);">Jumlah (kg)</label>
-                                                <input type="number" x-model="item.jumlah_kg" min="0.01" step="0.01" required class="form-input" placeholder="0.00"/>
-                                            </div>
-                                            <div>
-                                                <label class="text-xs" style="color:var(--color-text-muted);">Harga/kg (Rp)</label>
-                                                <input type="number" x-model="item.harga_per_kg" min="0" step="1" required class="form-input" placeholder="0"/>
-                                            </div>
-                                        </div>
-                                        <p class="text-right text-xs mt-2 font-medium" style="color:var(--color-primary);"
-                                           x-text="'Subtotal: Rp ' + fmtRp(subtotalItem(item))"></p>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl px-4 py-3 flex items-center justify-between" style="background:var(--color-primary-soft);">
-                            <div>
-                                <p class="text-xs" style="color:var(--color-text-muted);">Total (<span x-text="fmtKg(totalKgForm)"></span> kg)</p>
-                                <p class="text-lg font-bold" style="color:var(--color-primary);" x-text="'Rp ' + fmtRp(totalForm)"></p>
-                            </div>
-                            <p class="text-xs" style="color:var(--color-text-muted);" x-text="form.items.length + ' item'"></p>
-                        </div>
-
-                        <div class="flex gap-3 pt-2">
-                            <button type="button" @click="open=false" class="btn btn-secondary flex-1 justify-center">Batal</button>
-                            <button type="submit" :disabled="saving" class="btn btn-primary flex-1 justify-center">
-                                <span x-show="!saving">Simpan</span>
-                                <span x-show="saving" x-cloak>Menyimpan...</span>
+                    {{-- Item rows --}}
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="form-label mb-0">Item Melon</label>
+                            <button type="button" onclick="addItem()" class="btn btn-secondary text-xs py-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                Tambah Item
                             </button>
                         </div>
-                    </form>
-                </div>
-            </template>
-        </x-modal>
+                        <div class="hidden sm:grid grid-cols-12 gap-2 px-3 py-2 text-xs font-semibold" style="color:var(--color-text-muted);">
+                            <div class="col-span-5">Jenis Melon</div>
+                            <div class="col-span-2">Jumlah (kg)</div>
+                            <div class="col-span-3">Harga/kg (Rp)</div>
+                            <div class="col-span-2 text-right">Aksi</div>
+                        </div>
+                        <div id="formItemsContainer" class="space-y-2"></div>
+                    </div>
+
+                    <div class="rounded-xl px-4 py-3 flex items-center justify-between" style="background:var(--color-primary-soft);">
+                        <div>
+                            <p class="text-xs" style="color:var(--color-text-muted);">Total (<span id="totalKgForm">0,00 kg</span>)</p>
+                            <p class="text-lg font-bold" id="totalForm" style="color:var(--color-primary);">Rp 0</p>
+                        </div>
+                        <p class="text-xs" id="itemCount" style="color:var(--color-text-muted);">0 item</p>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeModal('formModal')" class="btn btn-secondary flex-1 justify-center">Batal</button>
+                        <button type="submit" id="btnSave" class="btn btn-primary flex-1 justify-center">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    {{-- ══════ Modal Nota ══════ --}}
-    <div x-show="notaOpen" x-cloak
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <x-modal maxWidth="max-w-sm" closeExpr="notaOpen = false">
-            <template x-if="notaOpen">
-                <div>
-                    <h3 class="text-base font-semibold mb-4 text-center" style="color:var(--color-text);">Nota Penjualan</h3>
-
-                    {{-- Preview struk --}}
-                    <div class="rounded-xl p-3 mb-4 overflow-x-auto" style="background:#fff;border:1px solid var(--color-border);">
-                        <pre class="mx-auto" style="font-family:'Courier New',monospace;font-size:11px;line-height:1.3;color:#000;width:max-content;" x-text="notaText"></pre>
-                    </div>
-
-                    <div class="space-y-2">
-                        <button @click="printBluetooth()" :disabled="btPrinting" class="btn btn-primary w-full justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.25 6.087l5.25 4.5-7.5 6.426V3.087l7.5 6.426-5.25 4.5M4.5 8.25l4.875 4.125L4.5 16.5"/></svg>
-                            <span x-show="!btPrinting" x-text="btReady ? 'Print Thermal (Tersambung)' : 'Print Thermal Bluetooth'"></span>
-                            <span x-show="btPrinting" x-cloak>Mencetak...</span>
-                        </button>
-                        <button @click="printBrowser()" class="btn btn-secondary w-full justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
-                            Print via Browser
-                        </button>
-                        <button @click="notaOpen=false" class="btn btn-secondary w-full justify-center" style="border:none;">Tutup</button>
-                    </div>
+    {{-- Modal Nota --}}
+    <div id="notaModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+        <div class="absolute inset-0" onclick="closeModal('notaModal')"></div>
+        <div class="relative w-full max-w-sm rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+             style="background:var(--color-surface);border:1px solid var(--color-border);" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--color-border);">
+                <h3 class="text-sm font-semibold" style="color:var(--color-text);">Nota Penjualan</h3>
+                <button type="button" onclick="closeModal('notaModal')" class="w-7 h-7 flex items-center justify-center rounded-lg" style="color:var(--color-text-muted);" onmouseover="this.style.background='var(--color-bg)'" onmouseout="this.style.background=''">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-5 py-5">
+                <div class="rounded-xl p-3 mb-4 overflow-x-auto" style="background:#fff;border:1px solid var(--color-border);">
+                    <pre id="notaPreview" class="mx-auto" style="font-family:'Courier New',monospace;font-size:11px;line-height:1.3;color:#000;width:max-content;"></pre>
                 </div>
-            </template>
-        </x-modal>
+                <div class="space-y-2">
+                    <button id="btnBtPrint" onclick="printBluetooth()" class="btn btn-primary w-full justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.25 6.087l5.25 4.5-7.5 6.426V3.087l7.5 6.426-5.25 4.5M4.5 8.25l4.875 4.125L4.5 16.5"/></svg>
+                        <span id="btPrintLabel">Print Thermal Bluetooth</span>
+                    </button>
+                    <button onclick="printBrowser()" class="btn btn-secondary w-full justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
+                        Print via Browser
+                    </button>
+                    <button onclick="closeModal('notaModal')" class="btn btn-secondary w-full justify-center" style="border:none;">Tutup</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Modal Hapus --}}
-    <div x-show="confirmDelete" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4"
-         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-         @keydown.escape.window="confirmDelete=false">
-        <div class="absolute inset-0" style="background:rgba(0,0,0,.45);backdrop-filter:blur(4px);" @click="confirmDelete=false"></div>
-        <div class="relative w-full max-w-md rounded-2xl shadow-2xl" style="background:var(--color-surface);border:1px solid var(--color-border);" @click.stop>
+    <div id="deleteModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+        <div class="absolute inset-0" onclick="closeModal('deleteModal')"></div>
+        <div class="relative w-full max-w-md rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+             style="background:var(--color-surface);border:1px solid var(--color-border);" onclick="event.stopPropagation()">
             <div class="px-5 py-5">
                 <p class="text-sm font-medium mb-1 text-center" style="color:var(--color-text);">
-                    Hapus nota <span class="font-mono" x-text="deleteTarget?.no_nota"></span>?
+                    Hapus nota <span class="font-mono" id="deleteNotaNo"></span>?
                 </p>
                 <p class="text-xs mb-5 text-center" style="color:var(--color-text-muted);">Transaksi kas terkait akan di-void secara otomatis.</p>
                 <div class="flex gap-3">
-                    <button @click="confirmDelete=false" class="btn btn-secondary flex-1 justify-center">Batal</button>
-                    <button @click="doDelete()" :disabled="deleting" class="btn btn-danger flex-1 justify-center">
-                        <template x-if="!deleting"><span>Hapus</span></template>
-                        <template x-if="deleting"><span>Menghapus...</span></template>
-                    </button>
+                    <button onclick="closeModal('deleteModal')" class="btn btn-secondary flex-1 justify-center">Batal</button>
+                    <button id="btnDelete" onclick="doDelete()" class="btn btn-danger flex-1 justify-center">Hapus</button>
                 </div>
             </div>
         </div>
@@ -335,7 +227,7 @@
 
 </div>
 
-{{-- Area cetak nota (hanya tampil saat print) --}}
+{{-- Area cetak nota (hidden, shown only on print) --}}
 <div id="nota-print"><pre id="nota-print-text"></pre></div>
 
 <script>
@@ -346,9 +238,9 @@ const ThermalPrinter = {
     characteristic: null,
 
     SERVICES: [
-        '000018f0-0000-1000-8000-00805f9b34fb', // umum: printer thermal BLE generik
-        'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Goojprt / Xprinter / PT-210
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC transparent UART (MTP-II dll.)
+        '000018f0-0000-1000-8000-00805f9b34fb',
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
     ],
 
     get connected() {
@@ -366,14 +258,13 @@ const ThermalPrinter = {
         });
         device.addEventListener('gattserverdisconnected', () => { this.characteristic = null; });
         const server = await device.gatt.connect();
-
         for (const uuid of this.SERVICES) {
             try {
                 const service = await server.getPrimaryService(uuid);
                 const chars   = await service.getCharacteristics();
                 const ch      = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
                 if (ch) { this.device = device; this.characteristic = ch; return; }
-            } catch (e) { /* service tidak ada di printer ini, coba berikutnya */ }
+            } catch (e) { /* try next */ }
         }
         device.gatt.disconnect();
         throw new Error('Printer tersambung tapi karakteristik tulis tidak ditemukan.');
@@ -381,7 +272,7 @@ const ThermalPrinter = {
 
     async write(bytes) {
         await this.connect();
-        const CHUNK = 100; // batas aman MTU BLE
+        const CHUNK = 100;
         for (let i = 0; i < bytes.length; i += CHUNK) {
             const slice = bytes.slice(i, i + CHUNK);
             if (this.characteristic.properties.writeWithoutResponse) {
@@ -393,9 +284,8 @@ const ThermalPrinter = {
         }
     },
 
-    // lines: [{text, align: 'left'|'center', bold, big}]
     buildEscPos(lines) {
-        const bytes = [0x1B, 0x40]; // init
+        const bytes = [0x1B, 0x40];
         const push  = (...b) => bytes.push(...b);
         const pushText = (t) => {
             for (const c of t) {
@@ -404,215 +294,432 @@ const ThermalPrinter = {
             }
         };
         for (const line of lines) {
-            push(0x1B, 0x61, line.align === 'center' ? 1 : 0);   // ESC a
-            push(0x1B, 0x45, line.bold ? 1 : 0);                 // ESC E
-            push(0x1D, 0x21, line.big ? 0x11 : 0x00);            // GS ! (2x w+h)
+            push(0x1B, 0x61, line.align === 'center' ? 1 : 0);
+            push(0x1B, 0x45, line.bold ? 1 : 0);
+            push(0x1D, 0x21, line.big ? 0x11 : 0x00);
             pushText(line.text);
             push(0x0A);
         }
         push(0x1D, 0x21, 0x00, 0x1B, 0x45, 0x00, 0x1B, 0x61, 0x00);
-        push(0x0A, 0x0A, 0x0A, 0x0A); // feed agar mudah disobek
+        push(0x0A, 0x0A, 0x0A, 0x0A);
         return new Uint8Array(bytes);
     },
 };
+/* ═══════════ end ThermalPrinter ═══════════ */
 </script>
 
 <script>
-function penjualanMelonApp() {
-    return {
-        items: [], loading: true, open: false, saving: false,
-        confirmDelete: false, deleteTarget: null, editId: null, deleting: false,
-        greenhouses: [], jenisList: [],
-        notaOpen: false, notaTarget: null, notaText: '', btPrinting: false, btReady: false,
-        filter: { search:'', greenhouse_id:'', dari:'', sampai:'' },
-        meta: { current_page:1, last_page:1, from:1, to:1, total:0 },
-        form: { greenhouse_id:'', nama_pembeli:'', tanggal:'', items: [] },
+const app = {
+    items: [], loading: true, editId: null, deleteTarget: null,
+    saving: false, deleting: false, btPrinting: false,
+    greenhouses: [], jenisList: [],
+    notaTarget: null, notaText: '',
+    filterVoid: false,
+    filter: { search:'', greenhouse_id:'', dari:'', sampai:'' },
+    meta: { current_page:1, last_page:1, from:1, to:1, total:0 },
+    formItems: [],
+};
 
-        fmtRp(n) { return Number(n || 0).toLocaleString('id-ID'); },
-        fmtKg(n) { return Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtRp(n) { return Number(n || 0).toLocaleString('id-ID'); }
+function fmtKg(n) { return Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+function subtotalItem(item) { return (parseFloat(item.jumlah_kg) || 0) * (parseFloat(item.harga_per_kg) || 0); }
 
-        async init() {
-            const [ghRes, jmRes] = await Promise.all([
-                apiFetch('/api/greenhouse?semua=1'),
-                apiFetch('/api/jenis-melon?semua=1'),
-            ]);
-            if (ghRes?.ok) { const d = await ghRes.json(); this.greenhouses = d.data || []; }
-            if (jmRes?.ok) { const d = await jmRes.json(); this.jenisList = d.data || []; }
-            await this.load();
-        },
+function setLoading(v) {
+    document.getElementById('skeleton').classList.toggle('hidden', !v);
+    document.getElementById('desktopWrap').classList.toggle('hidden', v);
+    document.getElementById('mobileWrap').classList.toggle('hidden', v);
+}
 
-        async load(page = 1) {
-            this.loading = true;
-            let url = `/api/penjualan-melon?page=${page}&per_page=20`;
-            if (this.filter.search) url += `&search=${encodeURIComponent(this.filter.search)}`;
-            if (this.filter.greenhouse_id) url += `&greenhouse_id=${this.filter.greenhouse_id}`;
-            if (this.filter.dari) url += `&dari=${this.filter.dari}`;
-            if (this.filter.sampai) url += `&sampai=${this.filter.sampai}`;
-            const res = await apiFetch(url);
-            if (res?.ok) {
-                const d = await res.json();
-                this.items = d.data || [];
-                if (d.meta) this.meta = d.meta;
-                else this.meta = { current_page: d.current_page, last_page: d.last_page, from: d.from, to: d.to, total: d.total };
-            }
-            this.loading = false;
-        },
+function render() {
+    const pj = app.items;
 
-        goPage(p) { if (p >= 1 && p <= this.meta.last_page) this.load(p); },
+    // Desktop tbody
+    const dt = document.getElementById('desktopTbl');
+    if (!pj.length) {
+        dt.innerHTML = `<tr><td colspan="8" class="tbl-cell text-center py-12" style="color:var(--color-text-muted);"><p class="text-sm font-medium">Belum ada data penjualan</p></td></tr>`;
+    } else {
+        dt.innerHTML = pj.map(p => {
+            const itemsText = (p.items || []).map(i => `${escHtml(i.jenis_melon?.nama || '?')} ${fmtKg(i.jumlah_kg)}kg`).join(', ');
+            const actionOrVoid = p.deleted_at
+                ? `<span class="badge badge-danger mx-auto block w-fit">VOID</span>`
+                : `<div class="flex items-center justify-center gap-1">
+                    <button onclick="openNotaById(${p.id})" title="Cetak Nota" class="w-8 h-8 flex items-center justify-center rounded-lg" style="color:var(--color-text-muted);" onmouseover="this.style.background='var(--color-bg)';this.style.color='#059669'" onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
+                    </button>
+                    <button onclick="openEditById(${p.id})" title="Edit" class="w-8 h-8 flex items-center justify-center rounded-lg" style="color:var(--color-text-muted);" onmouseover="this.style.background='var(--color-bg)';this.style.color='var(--color-primary)'" onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                    </button>
+                    <button onclick="openDeleteById(${p.id})" title="Hapus" class="w-8 h-8 flex items-center justify-center rounded-lg" style="color:var(--color-text-muted);" onmouseover="this.style.background='#FEE2E2';this.style.color='#B91C1C'" onmouseout="this.style.background='';this.style.color='var(--color-text-muted)'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                    </button>
+                   </div>`;
+            return `<tr class="tbl-row${p.deleted_at ? ' opacity-60' : ''}">
+                <td class="tbl-cell text-xs font-mono font-semibold" style="color:var(--color-primary);">${escHtml(p.no_nota || '—')}</td>
+                <td class="tbl-cell text-sm">${escHtml(formatDate(p.tanggal))}</td>
+                <td class="tbl-cell text-sm">${escHtml(p.greenhouse?.nama || '—')}</td>
+                <td class="tbl-cell text-sm font-medium">${escHtml(p.nama_pembeli)}</td>
+                <td class="tbl-cell text-xs hidden lg:table-cell" style="color:var(--color-text-muted);">${itemsText}</td>
+                <td class="tbl-cell text-right hidden lg:table-cell">${fmtKg(p.total_kg)} kg</td>
+                <td class="tbl-cell text-right font-bold" style="color:var(--color-primary);">Rp ${fmtRp(p.total)}</td>
+                <td class="tbl-cell">${actionOrVoid}</td>
+            </tr>`;
+        }).join('');
+    }
 
-        /* ── Form multi-item ── */
-        emptyItem() { return { jenis_melon_id:'', jumlah_kg:'', harga_per_kg:'' }; },
-        addItem() { this.form.items.push(this.emptyItem()); },
-        removeItem(idx) { if (this.form.items.length > 1) this.form.items.splice(idx, 1); },
-        subtotalItem(item) { return (parseFloat(item.jumlah_kg) || 0) * (parseFloat(item.harga_per_kg) || 0); },
-        get totalForm() { return this.form.items.reduce((s, i) => s + this.subtotalItem(i), 0); },
-        get totalKgForm() { return this.form.items.reduce((s, i) => s + (parseFloat(i.jumlah_kg) || 0), 0); },
+    // Mobile cards
+    const mc = document.getElementById('mobileCards');
+    if (!pj.length) {
+        mc.innerHTML = `<div class="rounded-2xl py-12 text-center" style="background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-muted);"><p class="text-sm font-medium">Belum ada data penjualan</p></div>`;
+    } else {
+        mc.innerHTML = pj.map(p => {
+            const itemRows = (p.items || []).map(it => `
+                <div class="flex justify-between text-xs">
+                    <span style="color:var(--color-text);">${escHtml(it.jenis_melon?.nama || '?')} — ${fmtKg(it.jumlah_kg)} kg × Rp ${fmtRp(it.harga_per_kg)}</span>
+                    <span class="font-medium shrink-0 pl-2" style="color:var(--color-text);">Rp ${fmtRp(it.subtotal)}</span>
+                </div>`).join('');
+            const actionBtns = p.deleted_at ? '' : `
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="openNotaById(${p.id})" class="btn btn-secondary justify-center text-xs py-2.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659"/></svg>
+                        Nota
+                    </button>
+                    <button onclick="openEditById(${p.id})" class="btn btn-secondary justify-center text-xs py-2.5">Edit</button>
+                    <button onclick="openDeleteById(${p.id})" class="btn btn-secondary justify-center text-xs py-2.5" style="color:#B91C1C;">Hapus</button>
+                </div>`;
+            return `
+                <div class="rounded-2xl p-4" style="${p.deleted_at ? 'background:var(--color-surface);border:1px solid #FECACA;opacity:.8;' : 'background:var(--color-surface);border:1px solid var(--color-border);'}">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-mono font-semibold" style="color:var(--color-primary);">${escHtml(p.no_nota || '—')}</p>
+                                ${p.deleted_at ? '<span class="badge badge-danger text-xs">VOID</span>' : ''}
+                            </div>
+                            <p class="text-sm font-semibold mt-0.5 truncate" style="color:var(--color-text);">${escHtml(p.nama_pembeli)}</p>
+                            <p class="text-xs" style="color:var(--color-text-muted);">${escHtml(formatDate(p.tanggal))} · ${escHtml(p.greenhouse?.nama || '—')}</p>
+                        </div>
+                        <p class="text-base font-bold shrink-0" style="color:var(--color-primary);">Rp ${fmtRp(p.total)}</p>
+                    </div>
+                    <div class="rounded-xl px-3 py-2 mb-3 space-y-1" style="background:var(--color-bg);">${itemRows}</div>
+                    ${actionBtns}
+                </div>`;
+        }).join('');
+    }
 
-        openCreate() {
-            this.editId = null;
-            this.form = {
-                greenhouse_id: this.greenhouses.length === 1 ? this.greenhouses[0].id : '',
-                nama_pembeli: '', tanggal: new Date().toISOString().split('T')[0],
-                items: [this.emptyItem()],
-            };
-            this.open = true;
-        },
-
-        openEdit(pj) {
-            this.editId = pj.id;
-            this.form = {
-                greenhouse_id: pj.greenhouse_id,
-                nama_pembeli:  pj.nama_pembeli,
-                tanggal:       pj.tanggal,
-                items: (pj.items || []).map(i => ({
-                    jenis_melon_id: i.jenis_melon_id,
-                    jumlah_kg:      i.jumlah_kg,
-                    harga_per_kg:   i.harga_per_kg,
-                })),
-            };
-            if (this.form.items.length === 0) this.form.items = [this.emptyItem()];
-            this.open = true;
-        },
-
-        openDelete(pj) { this.deleteTarget = pj; this.deleting = false; this.confirmDelete = true; },
-
-        async save() {
-            this.saving = true;
-            const url    = this.editId ? `/api/penjualan-melon/${this.editId}` : '/api/penjualan-melon';
-            const method = this.editId ? 'PUT' : 'POST';
-            const res    = await apiFetch(url, { method, body: JSON.stringify(this.form) });
-            const data   = await res.json();
-            if (res.ok) {
-                toast(this.editId ? 'Penjualan diperbarui.' : 'Penjualan disimpan & kas diperbarui.', 'success');
-                this.open = false;
-                await this.load(this.meta.current_page);
-                // Tawarkan cetak nota setelah simpan baru
-                if (!this.editId && data?.id) {
-                    const saved = this.items.find(i => i.id === data.id) || data;
-                    this.openNota(saved);
-                }
-            } else {
-                const errs = data.errors ? Object.values(data.errors).flat().join(' ') : data.message;
-                toast(errs, 'error');
-            }
-            this.saving = false;
-        },
-
-        async doDelete() {
-            this.deleting = true;
-            try {
-                const res = await apiFetch(`/api/penjualan-melon/${this.deleteTarget.id}`, { method: 'DELETE' });
-                if (!res) return;
-                const data = await res.json();
-                if (res.ok) {
-                    toast('Penjualan dihapus & transaksi kas di-void.', 'success');
-                    this.confirmDelete = false;
-                    await this.load(this.meta.current_page);
-                } else {
-                    toast(data.message || 'Gagal menghapus.', 'error');
-                }
-            } finally {
-                this.deleting = false;
-            }
-        },
-
-        /* ── Nota / struk ── */
-        notaLines(pj) {
-            const C = ThermalPrinter.COLS;
-            const div = '-'.repeat(C);
-            const kv  = (k, v) => (k + ': ').padEnd(9) + String(v ?? '—');
-            const lr  = (l, r) => {
-                l = String(l); r = String(r);
-                const pad = C - l.length - r.length;
-                return pad > 0 ? l + ' '.repeat(pad) + r : l + ' ' + r;
-            };
-            const tglParts = (pj.tanggal || '').split('-');
-            const tgl = tglParts.length === 3 ? `${tglParts[2]}/${tglParts[1]}/${tglParts[0]}` : pj.tanggal;
-
-            const lines = [
-                { text: 'BINCOFARM', align: 'center', bold: true, big: true },
-                { text: 'GH ' + (pj.greenhouse?.nama || '-'), align: 'center' },
-            ];
-            if (pj.greenhouse?.lokasi) lines.push({ text: pj.greenhouse.lokasi, align: 'center' });
-            lines.push({ text: div });
-            lines.push({ text: kv('No', pj.no_nota) });
-            lines.push({ text: kv('Tgl', tgl) });
-            lines.push({ text: kv('Pembeli', pj.nama_pembeli) });
-            if (pj.user?.name) lines.push({ text: kv('Petugas', pj.user.name) });
-            lines.push({ text: div });
-            for (const it of (pj.items || [])) {
-                lines.push({ text: it.jenis_melon?.nama || 'Melon' });
-                lines.push({ text: lr(`  ${this.fmtKg(it.jumlah_kg)}kg x ${this.fmtRp(it.harga_per_kg)}`, this.fmtRp(it.subtotal)) });
-            }
-            lines.push({ text: div });
-            lines.push({ text: lr('TOTAL KG', this.fmtKg(pj.total_kg) + ' kg') });
-            lines.push({ text: lr('TOTAL', 'Rp ' + this.fmtRp(pj.total)), bold: true });
-            lines.push({ text: div });
-            lines.push({ text: 'Terima kasih atas', align: 'center' });
-            lines.push({ text: 'pembelian Anda!', align: 'center' });
-            return lines;
-        },
-
-        notaToText(lines) {
-            const C = ThermalPrinter.COLS;
-            return lines.map(l => {
-                if (l.align === 'center') {
-                    const w = l.big ? Math.floor(C / 2) : C;
-                    const pad = Math.max(0, Math.floor((w - l.text.length) / 2));
-                    return ' '.repeat(pad) + l.text;
-                }
-                return l.text;
-            }).join('\n');
-        },
-
-        openNota(pj) {
-            this.notaTarget = pj;
-            this.notaText   = this.notaToText(this.notaLines(pj));
-            this.btReady    = ThermalPrinter.connected;
-            this.notaOpen   = true;
-        },
-
-        printBrowser() {
-            document.getElementById('nota-print-text').textContent = this.notaText;
-            window.print();
-        },
-
-        async printBluetooth() {
-            this.btPrinting = true;
-            try {
-                const bytes = ThermalPrinter.buildEscPos(this.notaLines(this.notaTarget));
-                await ThermalPrinter.write(bytes);
-                this.btReady = true;
-                toast('Nota terkirim ke printer.', 'success');
-            } catch (e) {
-                if (e.name !== 'NotFoundError') { // user batal pilih device
-                    toast(e.message || 'Gagal mencetak via Bluetooth.', 'error');
-                }
-            } finally {
-                this.btPrinting = false;
-            }
-        },
+    // Pagination
+    const bar = document.getElementById('pageBar');
+    if (app.meta.last_page > 1) {
+        bar.classList.remove('hidden');
+        document.getElementById('pageInfo').textContent = `${app.meta.from}–${app.meta.to} dari ${app.meta.total}`;
+        document.getElementById('btnPrev').disabled = app.meta.current_page <= 1;
+        document.getElementById('btnNext').disabled = app.meta.current_page >= app.meta.last_page;
+    } else {
+        bar.classList.add('hidden');
     }
 }
+
+async function load(page = 1) {
+    setLoading(true);
+    let url = `/api/penjualan-melon?page=${page}&per_page=20`;
+    if (app.filterVoid) {
+        url += `&hanya_void=1`;
+    } else {
+        if (app.filter.search)        url += `&search=${encodeURIComponent(app.filter.search)}`;
+        if (app.filter.greenhouse_id) url += `&greenhouse_id=${app.filter.greenhouse_id}`;
+        if (app.filter.dari)          url += `&dari=${app.filter.dari}`;
+        if (app.filter.sampai)        url += `&sampai=${app.filter.sampai}`;
+    }
+    const res = await apiFetch(url);
+    if (res?.ok) {
+        const d = await res.json();
+        app.items = d.data || [];
+        app.meta  = d.meta  || { current_page: d.current_page, last_page: d.last_page, from: d.from, to: d.to, total: d.total };
+    }
+    setLoading(false);
+    render();
+}
+
+function resetFilters() {
+    app.filter = { search:'', greenhouse_id:'', dari:'', sampai:'' };
+    ['filterSearch','filterGh','filterDari','filterSampai'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    load();
+}
+
+function toggleVoidFilter() {
+    app.filterVoid = !app.filterVoid;
+    document.getElementById('normalFilters').classList.toggle('hidden', app.filterVoid);
+    document.getElementById('btnAddPenjualan').classList.toggle('hidden', app.filterVoid);
+    const btn = document.getElementById('btnVoid');
+    if (app.filterVoid) {
+        btn.style.cssText = 'background:#FEE2E2;color:#B91C1C;border-color:#FECACA;font-weight:600;';
+    } else {
+        btn.style.cssText = '';
+    }
+    load();
+}
+
+/* ── Form item helpers ── */
+function renderFormItems() {
+    const cont = document.getElementById('formItemsContainer');
+    cont.innerHTML = app.formItems.map((item, idx) => {
+        const selected = String(item.jenis_melon_id || '');
+        const opts = app.jenisList.map(jm =>
+            `<option value="${jm.id}" ${String(jm.id) === selected ? 'selected' : ''}>${escHtml(jm.nama)}</option>`
+        ).join('');
+        const sub = subtotalItem(item);
+        return `
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 rounded-xl p-3" style="background:var(--color-bg);border:1px solid var(--color-border);">
+                <div class="sm:col-span-5">
+                    <label class="text-xs sm:hidden font-semibold mb-1 block" style="color:var(--color-text-muted);">Jenis Melon</label>
+                    <select onchange="app.formItems[${idx}].jenis_melon_id=this.value" required class="form-input w-full">
+                        <option value="">— Pilih Melon —</option>
+                        ${opts}
+                    </select>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="text-xs sm:hidden font-semibold mb-1 block" style="color:var(--color-text-muted);">Jumlah (kg)</label>
+                    <input type="number" value="${escHtml(item.jumlah_kg)}" oninput="app.formItems[${idx}].jumlah_kg=this.value;updateTotals()" min="0.01" step="0.01" required class="form-input w-full" placeholder="0.00"/>
+                </div>
+                <div class="sm:col-span-3">
+                    <label class="text-xs sm:hidden font-semibold mb-1 block" style="color:var(--color-text-muted);">Harga/kg (Rp)</label>
+                    <input type="number" value="${escHtml(item.harga_per_kg)}" oninput="app.formItems[${idx}].harga_per_kg=this.value;updateTotals()" min="0" step="1" required class="form-input w-full" placeholder="0"/>
+                </div>
+                <div class="sm:col-span-2 flex items-center justify-between gap-2 pt-1 sm:pt-0">
+                    <p class="text-xs font-medium sm:hidden" id="subtotal-mob-${idx}" style="color:var(--color-primary);">Rp ${fmtRp(sub)}</p>
+                    <button type="button" onclick="removeItem(${idx})" ${app.formItems.length === 1 ? 'disabled' : ''}
+                            class="ml-auto w-9 h-9 flex items-center justify-center rounded-lg disabled:opacity-30"
+                            style="color:#B91C1C;border:1px solid var(--color-border);" title="Hapus item">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="col-span-1 sm:col-span-12 hidden sm:flex items-center justify-end">
+                    <p class="text-xs font-medium" id="subtotal-desk-${idx}" style="color:var(--color-primary);">Subtotal: Rp ${fmtRp(sub)}</p>
+                </div>
+            </div>`;
+    }).join('');
+    updateTotals();
+}
+
+function updateTotals() {
+    let total = 0, totalKg = 0;
+    app.formItems.forEach((item, idx) => {
+        const sub = subtotalItem(item);
+        total   += sub;
+        totalKg += parseFloat(item.jumlah_kg) || 0;
+        const mob  = document.getElementById(`subtotal-mob-${idx}`);
+        const desk = document.getElementById(`subtotal-desk-${idx}`);
+        if (mob)  mob.textContent  = 'Rp ' + fmtRp(sub);
+        if (desk) desk.textContent = 'Subtotal: Rp ' + fmtRp(sub);
+    });
+    document.getElementById('totalForm').textContent   = 'Rp ' + fmtRp(total);
+    document.getElementById('totalKgForm').textContent = fmtKg(totalKg) + ' kg';
+    document.getElementById('itemCount').textContent   = app.formItems.length + ' item';
+}
+
+function addItem() {
+    app.formItems.push({ jenis_melon_id:'', jumlah_kg:'', harga_per_kg:'' });
+    renderFormItems();
+}
+function removeItem(idx) {
+    if (app.formItems.length > 1) { app.formItems.splice(idx, 1); renderFormItems(); }
+}
+
+function openCreate() {
+    app.editId = null;
+    document.getElementById('formTitle').textContent = 'Tambah Penjualan';
+    document.getElementById('fGhId').disabled = false;
+    document.getElementById('fGhId').value    = app.greenhouses.length === 1 ? String(app.greenhouses[0].id) : '';
+    document.getElementById('fTanggal').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fPembeli').value = '';
+    app.formItems = [{ jenis_melon_id:'', jumlah_kg:'', harga_per_kg:'' }];
+    renderFormItems();
+    openModal('formModal');
+}
+
+function openEditById(id) {
+    const pj = app.items.find(x => x.id === id);
+    if (!pj) return;
+    app.editId = id;
+    document.getElementById('formTitle').textContent = 'Edit Penjualan';
+    document.getElementById('fGhId').disabled = true;
+    document.getElementById('fGhId').value    = String(pj.greenhouse_id);
+    document.getElementById('fTanggal').value = pj.tanggal;
+    document.getElementById('fPembeli').value = pj.nama_pembeli;
+    app.formItems = (pj.items || []).map(i => ({
+        jenis_melon_id: String(i.jenis_melon_id),
+        jumlah_kg:      String(i.jumlah_kg),
+        harga_per_kg:   String(i.harga_per_kg),
+    }));
+    if (!app.formItems.length) app.formItems = [{ jenis_melon_id:'', jumlah_kg:'', harga_per_kg:'' }];
+    renderFormItems();
+    openModal('formModal');
+}
+
+function openDeleteById(id) {
+    app.deleteTarget = app.items.find(x => x.id === id);
+    document.getElementById('deleteNotaNo').textContent = app.deleteTarget?.no_nota || '';
+    openModal('deleteModal');
+}
+
+async function save(e) {
+    e.preventDefault();
+    if (app.saving) return;
+    app.saving = true;
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    const form = {
+        greenhouse_id: document.getElementById('fGhId').value,
+        nama_pembeli:  document.getElementById('fPembeli').value,
+        tanggal:       document.getElementById('fTanggal').value,
+        items:         app.formItems,
+    };
+    const url    = app.editId ? `/api/penjualan-melon/${app.editId}` : '/api/penjualan-melon';
+    const method = app.editId ? 'PUT' : 'POST';
+    const res    = await apiFetch(url, { method, body: JSON.stringify(form) });
+    const data   = await res.json();
+    if (res.ok) {
+        toast(app.editId ? 'Penjualan diperbarui.' : 'Penjualan disimpan & kas diperbarui.', 'success');
+        const wasNew  = !app.editId;
+        const savedId = data?.id;
+        closeModal('formModal');
+        await load(app.meta.current_page);
+        if (wasNew && savedId) {
+            const saved = app.items.find(i => i.id === savedId) || data;
+            openNotaById(savedId, saved);
+        }
+    } else {
+        toast(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Gagal menyimpan.'), 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Simpan';
+    app.saving = false;
+}
+
+async function doDelete() {
+    if (app.deleting || !app.deleteTarget) return;
+    app.deleting = true;
+    const btn = document.getElementById('btnDelete');
+    btn.disabled = true; btn.textContent = 'Menghapus...';
+    try {
+        const res  = await apiFetch(`/api/penjualan-melon/${app.deleteTarget.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+            toast('Penjualan dihapus & transaksi kas di-void.', 'success');
+            closeModal('deleteModal');
+            await load(app.meta.current_page);
+        } else {
+            toast(data.message || 'Gagal menghapus.', 'error');
+        }
+    } finally {
+        btn.disabled = false; btn.textContent = 'Hapus';
+        app.deleting = false;
+    }
+}
+
+/* ── Nota helpers ── */
+function notaLines(pj) {
+    const C = ThermalPrinter.COLS;
+    const kv = (k, v) => (k + ': ').padEnd(9) + String(v ?? '—');
+    const lr = (l, r) => { l = String(l); r = String(r); const pad = C - l.length - r.length; return pad > 0 ? l + ' '.repeat(pad) + r : l + ' ' + r; };
+    const tglParts = (pj.tanggal || '').split('-');
+    const tgl = tglParts.length === 3 ? `${tglParts[2]}/${tglParts[1]}/${tglParts[0]}` : pj.tanggal;
+    const lines = [
+        { text: 'BINCO INDOFARM', align: 'center', bold: true, big: true },
+        { text: pj.greenhouse?.nama || '-', align: 'center', bold: true },
+    ];
+    if (pj.greenhouse?.lokasi) lines.push({ text: pj.greenhouse.lokasi, align: 'center' });
+    lines.push({ text: '='.repeat(C) });
+    lines.push({ text: kv('No', pj.no_nota) });
+    lines.push({ text: kv('Tgl', tgl) });
+    lines.push({ text: kv('Pembeli', pj.nama_pembeli) });
+    lines.push({ text: '-'.repeat(C) });
+    for (const it of (pj.items || [])) {
+        lines.push({ text: it.jenis_melon?.nama || 'Melon' });
+        lines.push({ text: lr(`  ${fmtKg(it.jumlah_kg)}kg x ${fmtRp(it.harga_per_kg)}`, fmtRp(it.subtotal)) });
+    }
+    lines.push({ text: '-'.repeat(C) });
+    lines.push({ text: lr('TOTAL KG', fmtKg(pj.total_kg) + ' kg') });
+    lines.push({ text: lr('TOTAL', 'Rp ' + fmtRp(pj.total)), bold: true });
+    lines.push({ text: '='.repeat(C) });
+    lines.push({ text: 'Terima kasih atas', align: 'center' });
+    lines.push({ text: 'pembelian Anda!', align: 'center' });
+    return lines;
+}
+
+function notaToText(lines) {
+    const C = ThermalPrinter.COLS;
+    return lines.map(l => {
+        if (l.align === 'center') {
+            const w   = l.big ? Math.floor(C / 2) : C;
+            const pad = Math.max(0, Math.floor((w - l.text.length) / 2));
+            return ' '.repeat(pad) + l.text;
+        }
+        return l.text;
+    }).join('\n');
+}
+
+function openNotaById(id, pjObj) {
+    const pj = pjObj || app.items.find(x => x.id === id);
+    if (!pj) return;
+    app.notaTarget = pj;
+    app.notaText   = notaToText(notaLines(pj));
+    document.getElementById('notaPreview').textContent   = app.notaText;
+    document.getElementById('btPrintLabel').textContent  = ThermalPrinter.connected
+        ? 'Print Thermal (Tersambung)' : 'Print Thermal Bluetooth';
+    openModal('notaModal');
+}
+
+function printBrowser() {
+    document.getElementById('nota-print-text').textContent = app.notaText;
+    window.print();
+}
+
+async function printBluetooth() {
+    if (app.btPrinting) return;
+    app.btPrinting = true;
+    const btn = document.getElementById('btnBtPrint');
+    btn.disabled = true;
+    document.getElementById('btPrintLabel').textContent = 'Mencetak...';
+    try {
+        await ThermalPrinter.write(ThermalPrinter.buildEscPos(notaLines(app.notaTarget)));
+        document.getElementById('btPrintLabel').textContent = 'Print Thermal (Tersambung)';
+        toast('Nota terkirim ke printer.', 'success');
+    } catch (e) {
+        if (e.name !== 'NotFoundError') {
+            toast(e.message || 'Gagal mencetak via Bluetooth.', 'error');
+        }
+        document.getElementById('btPrintLabel').textContent = 'Print Thermal Bluetooth';
+    } finally {
+        btn.disabled = false;
+        app.btPrinting = false;
+    }
+}
+
+let searchTimer = null;
+function searchDebounce(v) {
+    app.filter.search = v;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(load, 300);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const [ghRes, jmRes] = await Promise.all([
+        apiFetch('/api/greenhouse?semua=1'),
+        apiFetch('/api/jenis-melon?semua=1'),
+    ]);
+    if (ghRes?.ok) {
+        const d = await ghRes.json();
+        app.greenhouses = d.data || [];
+        const filterSel = document.getElementById('filterGh');
+        const formSel   = document.getElementById('fGhId');
+        app.greenhouses.forEach(gh => {
+            filterSel.appendChild(new Option(gh.nama, gh.id));
+            formSel.appendChild(new Option(gh.nama, gh.id));
+        });
+    }
+    if (jmRes?.ok) { const d = await jmRes.json(); app.jenisList = d.data || []; }
+    await load();
+});
 </script>
 @endsection

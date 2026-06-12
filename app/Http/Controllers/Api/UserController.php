@@ -32,11 +32,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
+            'email'    => ['nullable', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
             'role'     => ['required', 'in:admin,inventory,pj_gh'],
             'phone'    => ['nullable', 'string', 'max:20'],
         ]);
+
+        if (empty($validated['email']) && empty($validated['phone'])) {
+            throw ValidationException::withMessages([
+                'email' => ['Email atau No. HP harus diisi salah satu.'],
+            ]);
+        }
 
         $validated['password'] = Hash::make($validated['password']);
         $user = User::create($validated);
@@ -50,11 +56,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', "unique:users,email,{$user->id}"],
+            'email'    => ['nullable', 'email', "unique:users,email,{$user->id}"],
             'role'     => ['required', 'in:admin,inventory,pj_gh'],
             'phone'    => ['nullable', 'string', 'max:20'],
             'password' => ['nullable', 'string', 'min:6'],
         ]);
+
+        if (empty($validated['email']) && empty($validated['phone'])) {
+            throw ValidationException::withMessages([
+                'email' => ['Email atau No. HP harus diisi salah satu.'],
+            ]);
+        }
 
         if (empty($validated['password'])) {
             unset($validated['password']);
